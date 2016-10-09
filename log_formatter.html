@@ -1,0 +1,499 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<title>Log Formatter</title>
+		<link rel="stylesheet" type="text/css" href="normalize.css">
+		<style>
+			body, html{
+				background-color: #FFFFFF;
+				color: #000;
+				font: 14px "Times New Roman, Times, serif;";
+				margin: 0px;
+			}
+			.input{
+				width:100%;
+				height:150px;
+			}
+			.input_small{
+				width:100%;
+			}
+			.input_button{
+				padding: 5px;
+				width: 80px;
+			}
+			#output{
+				padding: 10px;
+				margin-left:410px;
+				min-height:100%;
+			}
+			#output td{
+				vertical-align: top
+			}
+			.nav{
+				background-color: rgba(146, 155, 154, 1);
+				position:fixed;
+				top:0;
+				left:0;
+				width:400px;
+				bottom:0;
+				padding:5px;
+				overflow-y: auto;
+			}
+			td.label{
+				width: 80px;
+				text-align: right;
+				font-weight: 700;
+				padding: 5px 2px;
+			}
+			span.label{
+				font-weight: 700;
+				display:block;
+				margin:5px;
+			}
+		</style>
+		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
+		<script>	
+			var app = angular.module('formatterApp', []);
+
+			app.controller('appController', ['$scope', '$http',
+			function($scope, $http) {
+				//SAVE DATA
+				$scope.save_timer=null;
+				$scope.save_data = function() {
+					if ($scope.save_timer!=null) clearTimeout($scope.save_timer);
+					$scope.save_timer=setTimeout(function(){
+						if(typeof(Storage) !== "undefined"){
+							localStorage.setItem("Data",JSON.stringify($scope.data));
+						}					
+					$scope.save_timer=null;
+					}, 3000);
+				}
+			
+				//INITIALIZE
+				$scope.data = {};
+				$scope.data['input_raw'] = ""
+				$scope.data['input_log'] = "";
+				$scope.data['gm'] = "Teller|GM";
+				$scope.data['player'] = "";
+				$scope.data['output_header'] = "";
+				$scope.data['output_gm_post'] = "<p><b>[NICK]</b></p><p>[POST]</p><hr>";
+				$scope.data['output_player_post'] = "<p><b>[NICK]</b></p><p>[POST]</p><hr>";
+				$scope.data['output_footer'] = "";
+				$scope.data['merge_posts'] = true;
+				$scope.data['detect_symbols'] = true;
+				$scope.data['remove_comments'] = false;
+				$scope.data['remove_end'] = true;
+				$scope.data['cache'] = "";
+				$scope.data['cached_response'] = "";
+				$scope.data['output_delimiter'] = "<p>";
+				if(typeof(Storage) !== "undefined"){
+					var data=localStorage.getItem("Data");
+					if (data==null){
+						$scope.save_data();
+					}else{
+						var parsed_data= JSON.parse(data);
+						for (var attrname in parsed_data) { $scope.data[attrname] = parsed_data[attrname]; }
+					}
+				}
+				
+			
+				//HIGHLIGHT
+				$scope.highlight = function() {
+					var node = document.getElementById("output");
+
+					if ( document.selection ) {
+						var range = document.body.createTextRange();
+						range.moveToElementText( node  );
+						range.select();
+					} else if ( window.getSelection ) {
+						var range = document.createRange();
+						range.selectNodeContents( node );
+						window.getSelection().removeAllRanges();
+						window.getSelection().addRange( range );
+					}
+				}
+				
+				//CONVERSION
+				$scope.resolve = function() {
+					var txt=$scope.data.input_log, url=txt;
+					if (txt.length<100){ //Try to grab a url
+						if(/^((ftp|http|https):\/\/)?([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(txt)){ //Dealing with url
+							if ($scope.data.cache != txt){
+								if (txt.indexOf("pastebin.com") !== -1){ //Dealing with a pastebin
+									if (txt.indexOf("raw.php?i=") !== -1){ //A blessing on your house, you've given us the raw url
+										var url='http://pastebin.com/raw.php?i='+txt.substr(txt.indexOf("?i=")+3,txt.length);
+									}else{ //assume normal pastebin url
+										var url='http://pastebin.com/raw.php?i='+txt.substr(txt.substr(0,txt.length-1).lastIndexOf("/")+1,txt.length);
+									}
+								}
+								if (txt.indexOf("irccloud.com") !== -1){ //Dealing with an irccloud pastebin
+										var url='https://www.irccloud.com/pastebin/raw/'+txt.substr(txt.substr(0,txt.length-1).lastIndexOf("/")+1,txt.length);
+								}
+								var xmlhttp=new XMLHttpRequest();
+								xmlhttp.open("GET","https://cors-anywhere.herokuapp.com/"+url,true);
+								$scope.data.cache=txt;
+								xmlhttp.onreadystatechange = function() {
+									 if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+										
+										$scope.data.input_raw = xmlhttp.response.replace(/&/g, "&amp;")
+																			 .replace(/</g, "&lt;")
+																			 .replace(/>/g, "&gt;")
+																			 .replace(/"/g, "&quot;")
+																			 .replace(/'/g, "&#039;");
+										$scope.data.cached_response = $scope.data.input_raw;
+										$scope.convert();
+									 }
+								  }
+								xmlhttp.send();
+							}else{
+								$scope.data.input_raw = $scope.data.cached_response;
+								$scope.convert();
+							}
+						}
+					}else{ //Assume raw text, try to parse
+						$scope.data.input_raw = $scope.data.input_log.replace(/&/g, "&amp;")
+															 .replace(/</g, "&lt;")
+															 .replace(/>/g, "&gt;")
+															 .replace(/"/g, "&quot;")
+															 .replace(/'/g, "&#039;");
+						$scope.convert();
+					}
+				}
+				
+				$scope.convert = function() {
+					$scope.data.input_raw = $scope.data.input_raw.replace(/\r?\n|\r/g, "\n");
+					var line = $scope.data.input_raw.split("\n");
+					var gm_nicks = $scope.data.gm.split(",");
+					var all_nicks = $scope.data.player.split(",").concat(gm_nicks);
+					if ($scope.data.format_rolls) all_nicks.push('[ATM]');
+					for(var i=all_nicks.length-1;i>=0;i--){
+						all_nicks[i]=all_nicks[i].trim()
+						if (all_nicks[i]=='') all_nicks.splice(i, 1);
+					}
+					for(var i=gm_nicks.length-1;i>=0;i--) gm_nicks[i]=gm_nicks[i].trim()
+					
+					var data_nick=[], data_post=[], last_nick="", toggle=0;
+					var input_style=0;
+					
+					//DETERMINE STYLE
+					for(var i=0, j=line.length;i<j;i++){
+						if (line[i].trim().length==0) continue; //Blank Line
+						if (/^[1234567890: ]+$/.test(line[i])) continue; //Remove Time
+						if (line[i].indexOf(String.fromCharCode(9432)) !== -1)  continue; //(nickchange, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8592)) !== -1)  continue; //(left/quit, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8594)) !== -1)  continue; //(joined, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8596)) !== -1)  continue; //(nipped out, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8656)) !== -1)  continue; //(left, Panda logs)
+						if (line[i].charAt(0) =="#") continue; //(irccloud header)
+						if (line[i].indexOf('@') != -1) continue; //(nickchange/left/quit/joined, Apoc/Teller logs)
+						if (line[i].indexOf('join') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('part') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('know') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('nick') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('quit') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('ping') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('left') != -1) continue; //(might be a message, find a more determinate line)
+						if (line[i].indexOf('disconnect') != -1) continue; //(might be a message, find a more determinate line)
+												
+						for(var k=all_nicks.length-1;k>=0;k--){
+							if (line[i]==all_nicks[k] || line[i].substring(1)==all_nicks[k]) input_style=1;
+							if (line[i].indexOf(all_nicks[k]+":")!=-1) input_style=2;
+						}
+						if (input_style==2) break;
+					}
+					console.log("input style "+input_style);
+					
+					//PROCESS LINES
+					for( var i=0,j=line.length;i<j;i++){
+						//STRIP TIME
+						var match = /^\[?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?[-1234567890: ]{4,16}[APMapm]{0,2} ?\]? +/.exec(line[i]);
+						if (match) line[i]=line[i].substring(match[0].length);
+						
+						//STRIP USERNAME MODIFIERS
+						if (line[i].charAt(0)=='~' || line[i].charAt(0) =='•') line[i]=line[i].substring(1);
+						
+						//DISCARD LINES WITH SUSPECT CHARACTERS
+						if (line[i].trim().length == 0)  continue; //Blank Line
+						if (line[i].indexOf(String.fromCharCode(9432)) !== -1)  continue; //(nickchange, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8592)) !== -1)  continue; //(left/quit, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8594)) !== -1)  continue; //(joined, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8596)) !== -1)  continue; //(nipped out, Antioch logs)
+						if (line[i].indexOf(String.fromCharCode(8656)) !== -1)  continue; //(left, Panda logs)
+						if (line[i].charAt(0) =="#") continue; //(irccloud header)
+						if (input_style==0 && line[i].charAt(0) =="*" && line[i].trim().length<120) continue; //(server messages)
+						//if (input_style==0 && line[i].indexOf("&lt;") == -1 && line[i].indexOf("&gt;") == -1) continue; //(nickchange/left/quit/joined, Apoc/Teller logs)
+						//if (input_style==2 && /^[a-zA-Z0-9|_~•]{4,25}[:] .*$/.test(line[i]) == false) continue; //Check for messages in Nonagon style log
+						
+						//TRIM LINES 1
+						line[i]=line[i].trim();
+						
+						//FIND NICK FROM LIST
+						var nick='',nick_index=-1;
+						for(var k=all_nicks.length-1;k>=0;k--){
+							if (input_style==1){
+								if (line[i]==all_nicks[k] && (nick_index==-1 || nick.length<all_nicks[k].length)){
+									nick=all_nicks[k];
+									nick_index=0;
+								}
+								continue;
+							}
+							var new_nick_index=line[i].indexOf(all_nicks[k]);
+							if (new_nick_index!=-1 && (new_nick_index<5 || input_style==0) &&
+							(new_nick_index<nick_index || nick_index==-1 || (new_nick_index==nick_index && nick.length<all_nicks[k].length))){
+								nick=all_nicks[k];
+								nick_index=new_nick_index;
+							}
+						}
+						nick_index += nick.length;
+						
+						//IF NICK IS BLANK, GUESS IT FROM THE TEXT
+						if (nick==''){
+							var nick_index=0, nick_end=line[i].indexOf(' ');
+							nick=line[i].substring(0,nick_end);
+							nick_index=nick.length;
+							if (nick == '*'){
+								nick_end=line[i].substring(2).indexOf(' ');
+								nick=line[i].substring(2,nick_end+2);
+								nick_index=nick.length+2;
+							}else{
+								if (input_style!=1 && input_style!=2){
+									if (nick.indexOf("&lt;")==0 && nick.indexOf("&gt;")==nick.length-4){
+										nick = nick.substring(4,nick.length-4);
+										nick_index=4+nick.length;
+									}else if (input_style==0){
+										nick=last_nick;
+										nick_index=0;
+										var li = data_post.length-1;
+										data_post[li] = data_post[li]+"..."
+										line[i] = "... "+line[i];
+										//continue;
+										//console.log(nick);
+										//continue;
+									}
+									if (nick.charAt(nick.length-1) == ':'){
+										nick = nick.substring(0,nick.length-1);
+										nick_index-=1;
+									}
+								}else{
+									nick=last_nick;
+									nick_index=0;
+								}
+							}
+						}
+						
+						//GET ROLLS
+						if (nick=='[ATM]'){
+							nick=last_nick;
+							nick_index=0;
+							if (line[i].indexOf('&quot;')!=-1){
+								line[i] = "&nbsp;&nbsp;&nbsp;&nbsp;<b>ROLL: " + line[i].substring(line[i].indexOf('&quot;')) + "</b>";
+							}else{
+								var n=-1;
+								for(var k=all_nicks.length-1;k>=0;k--){
+									n=Math.max(line[i].indexOf(all_nicks[k]),n);
+								}
+								line[i] = "&nbsp;&nbsp;&nbsp;&nbsp;<b>ROLL: " + line[i].substring(line[i].indexOf(' ',n)) + "</b>";
+							}
+						}
+						
+						//SET POST
+						var post=line[i].substring(nick_index);
+						var li = data_post.length-1;
+						if (post.indexOf('&gt;') == 0) post = post.substring(4); //STRIP > FROM POST
+						if (post.indexOf(':') == 0) post = post.substring(1); //STRIP : FROM POST
+						post=post.trim() //TRIM POST
+						if ($scope.data.detect_symbols && /^\.{1,5}$/.test(post)) continue; //IGNORE ...
+						
+						if ($scope.data.detect_symbols && post == '-||'){ //REMOVE END FROM LAST LINE
+							var match=/(\||\/|\\|&gt;)+$/.exec(data_post[li]);
+							if (match) data_post[li] = data_post[li].substring(0,match.index);
+							continue;
+						}
+						
+						//ME POSTS
+						if (line[i].charAt(0)=='*'){
+							post=nick+' '+post;
+						}
+						
+						if ($scope.data.remove_end){ //STRIP || FROM POST
+							var match=/(\||\/|\\|&gt;)+$/.exec(post); 
+							if (match) post = post.substring(0,match.index);
+						}
+						
+						if ($scope.data.remove_comments && post.substr(0,2)=="((") continue; //REMOVE COMMENTS
+						if ($scope.data.format_rolls && post.substr(0,1)=="$") continue; //REMOVE ROLLS
+						
+						//MERGE POSTS THAT END IN ...
+						if (i>0 && li>-1 && $scope.data.detect_symbols && post.substr(0,3)=="..." && post.length>3 && data_post[li].substr(data_post[li].length-3)=="..."){ 
+							data_post[li] = data_post[li].substr(0,data_post[li].length-3)+post.substr(3);
+							continue;
+						}
+						
+						//CONVERT ITALICS
+						if ($scope.data.detect_italics){
+							post = post.replace(/\/([^\/]+)\//g, "<i>\$1</i>");
+						}
+						
+						//SAVE
+						last_nick=nick;
+						if (post.trim()!=""){
+							if (!$scope.data.merge_posts || li==-1 || data_nick[li]!=nick){
+								data_nick.push(nick); data_post.push(post);
+							}else{
+								data_post[li] += $scope.data.output_delimiter+post;
+							}
+						}
+					}
+					
+					//FINAL OUTPUT
+					var output = $scope.data.output_header;
+					for( var i=0,j=data_post.length;i<j;i++){
+						if (data_post[i]==""){ //Blank Line
+							output += "<p><br /></p>";
+						}else{
+							if (gm_nicks.indexOf(data_nick[i])!==-1){ //GM Post
+								output += $scope.data.output_gm_post.replace("[NICK]", data_nick[i]).replace("[POST]", data_post[i]);
+							}else{
+								output += $scope.data.output_player_post.replace("[NICK]", data_nick[i]).replace("[POST]", data_post[i]);
+							}
+						}
+					}
+					output += $scope.data.output_footer;
+					if ($scope.data.format_paragraphs){
+						output = output.split('<hr><p>').join('<hr><p style="\
+							margin-top:7pt;\
+							margin-bottom:7pt;\
+							font-size: 14.666666666666666px;\
+							font-family: Arial;\
+							color: rgb(0, 0, 0);\
+							background-color: transparent;\
+							font-weight: 400;\
+							font-style: normal;\
+							font-variant: normal;\
+							text-decoration: none;\
+							vertical-align: baseline;\
+							line-height: 1.15;">');
+						output = output.split('<p>').join('<p style="\
+							margin-top:0pt;\
+							margin-bottom:7pt;\
+							font-size: 14.666666666666666px;\
+							font-family: Arial;\
+							color: rgb(0, 0, 0);\
+							background-color: transparent;\
+							font-weight: 400;\
+							font-style: normal;\
+							font-variant: normal;\
+							text-decoration: none;\
+							vertical-align: baseline;\
+							line-height: 1.15;">');
+						output = output.split('<td>').join('<td style="padding: 0pt 3pt;">');
+					}
+					console.log(output);
+					document.getElementById("output").innerHTML = output;
+				}
+		
+				//PRESET OUTPUTS
+				$scope.format_teller = function() {
+					$scope.data.output_header = "";
+					$scope.data.output_gm_post = "<p><b>[NICK]</b></p><p>[POST]</p><hr>";
+					$scope.data.output_player_post = "<p><b>[NICK]</b></p><p>[POST]</p><hr>";
+					$scope.data.output_footer = "";
+					$scope.data.output_delimiter = "<p>";
+					$scope.data.merge_posts = true;
+					$scope.data.remove_end = true;
+					$scope.data.format_paragraphs = true;
+				}
+				$scope.format_wildbow = function() {
+					$scope.data.output_header = "<table>";
+					$scope.data.output_gm_post = "<tr><td><b><p>[NICK]</p></b></td><td><p><b>[POST]</b></p></td></tr>";
+					$scope.data.output_player_post = "<tr><td><p>[NICK]</p></b></td><td><p>[POST]</p></td></tr>";
+					$scope.data.output_footer = "</table>";
+					$scope.data.output_delimiter = "<p>";
+					$scope.data.merge_posts = true;
+					$scope.data.remove_end = true;
+					$scope.data.format_paragraphs = true;
+				}
+				$scope.format_antioch = function() {
+					$scope.data.output_header = "";
+					$scope.data.output_gm_post = "<p><b>[NICK]</b></p><p>[POST]</p><br />";
+					$scope.data.output_player_post = "<p><b>[NICK]</b></p><p>[POST]</p><br />";
+					$scope.data.output_footer = "";
+					$scope.data.output_delimiter = "<p>";
+					$scope.data.merge_posts = true;
+					$scope.data.remove_end = true;
+					$scope.data.format_paragraphs = true;
+				}
+				$scope.format_plain = function() {
+					$scope.data.output_header = "";
+					$scope.data.output_gm_post = "<p>&lt;[NICK]&gt; [POST]</p>";
+					$scope.data.output_player_post = "<p>&lt;[NICK]&gt; [POST]</p>";
+					$scope.data.output_footer = "";
+					$scope.data.output_delimiter = "<p>";
+					$scope.data.merge_posts = false;
+					$scope.data.remove_end = false;
+					$scope.data.format_paragraphs = false;
+				}
+			}]);
+		</script>
+	</head>
+	<body ng-app="formatterApp" ng-controller="appController">
+		<div class="nav">
+			<span class="label">Raw Log Input (URL or text)</span>
+			<hr />
+			<textarea class="input" ng-change="save_data()" ng-model="data.input_log"></textarea>
+			<hr />
+			<span class="label">Settings</span>
+			<hr />
+			<font size="2"><i>Placeholders: [NICK] [POST]<br />
+			Separate multiple GM/player names with a comma.</i></font>
+			<hr />
+			<table width="100%">
+				<tr>
+					<td class="label">GM(s)</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.gm"></input></td>
+					<td class="label">Player(s)</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.player"></input></td>
+				</tr>
+				<tr>
+					<td class="label">GM Post</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.output_gm_post"></input></td>
+					<td class="label">Player Post</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.output_player_post"></input></td>
+				</tr>
+				<tr>
+					<td class="label">Header</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.output_header"></input></td>
+					<td class="label">Footer</td>
+					<td><input type="text" class="input_small" ng-change="save_data()" ng-model="data.output_footer"></input></td>
+				</tr>
+			</table>
+			<hr />
+
+			<table width="100%">
+				<tr>
+					<td>
+						<input type="checkbox" ng-change="save_data()" ng-model="data.merge_posts"> Merge Consecutive Posts<br />
+						<input type="checkbox" ng-change="save_data()" ng-model="data.format_paragraphs"> Format Paragraphs<br />
+						<input type="checkbox" ng-change="save_data()" ng-model="data.format_rolls"> Format Rolls<br />
+						<input type="checkbox" ng-change="save_data()" ng-model="data.detect_italics"> Detect /italics/<br />
+					</td>
+					<td>
+						<input type="checkbox" ng-change="save_data()" ng-model="data.remove_end"> Remove "||", "//", and ">>"<br />
+						<input type="checkbox" ng-change="save_data()" ng-model="data.detect_symbols"> Detect "..." and "-||"<br />
+						<input type="checkbox" ng-change="save_data()" ng-model="data.remove_comments"> Remove ((Comments))<br />
+					</td>
+				</tr>
+			</table>
+			<hr />
+			<span class="label">Presets</span>
+			<hr />
+			<button class="input_button" ng-click="format_plain()">Plain</button>
+			<button class="input_button" ng-click="format_wildbow()">Table</button>
+			<button class="input_button" ng-click="format_antioch()">Paragraph</button>
+			<button class="input_button" ng-click="format_teller()">Divided</button>
+			<hr />
+			<center><button class="input_button" ng-click="resolve()">Convert</button>&nbsp;<button class="input_button" ng-click="highlight()">Highlight</button></center>
+		</div>
+		<div id="output"></div>
+	</body>
+</html>
