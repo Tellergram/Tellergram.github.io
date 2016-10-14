@@ -323,15 +323,15 @@
 						if ($scope.data.remove_comments && post.substr(0,2)=="((") continue; //REMOVE COMMENTS
 						if ($scope.data.format_rolls && post.substr(0,1)=="$") continue; //REMOVE ROLLS
 						
+						//CONVERT ITALICS
+						if ($scope.data.detect_italics){
+							post = post.replace(/\/([^\/]+)\//g, "<i>\$1</i>");
+						}
+						
 						//MERGE POSTS THAT END IN ...
 						if (i>0 && li>-1 && $scope.data.detect_symbols && post.substr(0,3)=="..." && post.length>3 && data_post[li].substr(data_post[li].length-3)=="..."){ 
 							data_post[li] = data_post[li].substr(0,data_post[li].length-3)+post.substr(3);
 							continue;
-						}
-						
-						//CONVERT ITALICS
-						if ($scope.data.detect_italics){
-							post = post.replace(/\/([^\/]+)\//g, "<i>\$1</i>");
 						}
 						
 						//SAVE
