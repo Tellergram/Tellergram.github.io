@@ -206,7 +206,7 @@
                     //PROCESS LINES
                     for( var i=0,j=line.length;i<j;i++){
                         //STRIP TIME
-                        var match = /^\[?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?[-1234567890: ]{4,16}[APMapm]{0,2} ?\]? +/.exec(line[i]);
+                        var match = /^\[?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?[-1234567890: ]{4,24}[APMapm]{0,2} ?\]? +/.exec(line[i]);
                         if (match) line[i]=line[i].substring(match[0].length);
                         
                         //STRIP USERNAME MODIFIERS
