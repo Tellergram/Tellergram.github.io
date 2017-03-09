@@ -237,7 +237,7 @@
                         parent.settings.output_player_post = "<p><b>[NICK]</b></p><p>[POST]</p><hr>";
                         parent.settings.output_footer = "";
                         parent.settings.output_delimiter = "<p>";
-                        parent.settings.merge_posts = true;
+                        parent.settings.merge_consecutive_posts = true;
                         parent.settings.remove_end = true;
                         parent.settings.format_paragraphs = true;
                         parent.dom_pull_data();
@@ -248,7 +248,7 @@
                         parent.settings.output_gm_post = "<tr><td><b><p>[NICK]</p></b></td><td><p><b>[POST]</b></p></td></tr>";
                         parent.settings.output_player_post = "<tr><td><p>[NICK]</p></b></td><td><p>[POST]</p></td></tr>";
                         parent.settings.output_footer = "</table>";
-                        parent.settings.merge_posts = true;
+                        parent.settings.merge_consecutive_posts = true;
                         parent.settings.remove_end = true;
                         parent.settings.format_paragraphs = true;
                         parent.dom_pull_data();
@@ -259,7 +259,7 @@
                         parent.settings.output_gm_post = "<p><b>[NICK]</b></p><p>[POST]</p><br />";
                         parent.settings.output_player_post = "<p><b>[NICK]</b></p><p>[POST]</p><br />";
                         parent.settings.output_footer = "";
-                        parent.settings.merge_posts = true;
+                        parent.settings.merge_consecutive_posts = true;
                         parent.settings.remove_end = true;
                         parent.settings.format_paragraphs = true;
                         parent.dom_pull_data();
@@ -270,7 +270,7 @@
                         parent.settings.output_gm_post = "<p>&lt;[NICK]&gt; [POST]</p>";
                         parent.settings.output_player_post = "<p>&lt;[NICK]&gt; [POST]</p>";
                         parent.settings.output_footer = "";
-                        parent.settings.merge_posts = false;
+                        parent.settings.merge_consecutive_posts = false;
                         parent.settings.remove_end = false;
                         parent.settings.format_paragraphs = false;
                         parent.dom_pull_data();
@@ -721,7 +721,7 @@
                 <table width="100%">
                     <tr>
                         <td>
-                            <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.merge_posts"> Merge Consecutive Posts<br />
+                            <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.merge_consecutive_posts"> Merge Consecutive Posts<br />
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.format_paragraphs"> Format CSS<br />
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.format_rolls"> Format Rolls<br />
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.detect_italics"> Detect /italics/<br />
