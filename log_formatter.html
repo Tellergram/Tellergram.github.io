@@ -529,7 +529,7 @@
                         //PRINT OUTPUT
                         var output = parent.settings.output_header;
                         for (var i = 0, i_len = posts.length; i < i_len; i++) {
-                            if (posts[i].nick && posts[i].lines) {
+                            if (posts[i].nick && posts[i].lines.length > 0) {
                                 if (posts[i].gm){ //GM Post
                                     output += parent.settings.output_gm_post.replace('[NICK]', posts[i].nick)
                                                                             .replace('[POST]', posts[i].lines.join(parent.settings.output_delimiter));
