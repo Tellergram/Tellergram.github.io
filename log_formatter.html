@@ -409,7 +409,11 @@
                             if (parent.settings.format_rolls) all_nicks.push('[ATM]');
                             escaped_nicks = $.map( all_nicks, function(str) { return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"); }).join('|'),
                             nicks_re = new RegExp("(&lt;)?(~|•|\\+|@|%)?(" + escaped_nicks + ")(:)?(&gt;)?[ ]*");
-                            
+                        
+                        //REMOVE PROBLEMATIC SYMBOLS
+                        input = input.replace(/<br\s*[\/]?>/gi,"\n")
+                                     .replace(/&nbsp;/gi," ");
+                                     
                         //BREAK INPUT DOWN INTO FORMATTED LINES
                         var lines = [], pre_lines = $.map(input.replace(/<br\s*[\/]?>/gi,"\n").match(/[^\r\n]+/g), function (v, i) {
                             return parent.FString(v);
