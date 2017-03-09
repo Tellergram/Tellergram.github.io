@@ -77,6 +77,11 @@
                 font-weight: 700;
                 padding: 5px 2px;
             }
+            .debug {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+            }
         </style>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <!--<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>-->
@@ -564,6 +569,15 @@
                         }
 
                         $('#output').html(output);
+                    },
+                    
+                    //DEBUG
+                    debug: function () {
+                        var debug = {
+                            input: parent.input,
+                            settings: parent.settings
+                        };
+                        $('#output').html(JSON.stringify(debug));
                     }
                 }
                 return parent;
@@ -744,6 +758,7 @@
                 </span>
             </div>
             <center><button class="input_button" onclick="irc_log_formatter.convert()">Convert</button>&nbsp;<button class="input_button" onclick="irc_log_formatter.highlight_output()">Highlight</button></center>
+            <button class="debug" onclick="irc_log_formatter.debug()">?</button>
         </div>
         <div id="output"></div>
     </body>
