@@ -313,7 +313,6 @@
                             if (parent.cache.timer != null) clearTimeout(parent.cache.timer);
                             parent.cache.timer = setTimeout(function() {
                                 if (typeof(Storage) !== "undefined"){
-                                    parent.dom_pull_data();
                                     localStorage.setItem("settings", JSON.stringify(parent.settings));
                                     localStorage.setItem("input", parent.input);
                                 }
