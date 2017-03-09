@@ -578,6 +578,14 @@
                             settings: parent.settings
                         };
                         $('#output').html(JSON.stringify(debug));
+                    },
+                    
+                    //IMPORT
+                    debug_import: function() {
+                        var json = JSON.parse(prompt());
+                        parent.input = json.input;
+                        parent.settings = json.settings;
+                        parent.dom_pull_data();
                     }
                 }
                 return parent;
@@ -621,7 +629,10 @@
                                 if ($item.is('p') || $item.is('br') || (display == 'block' && position != 'absolute')) {
                                     $item.after('<br />');//wrap('<div></div>');
                                 }
-
+                                if ($item.is('pre')) {
+                                    $item.html($item.html().replace(/\n(\r)?/g,"<br>"));
+                                }
+                                
                                 $item.contents().unwrap();
                                 
                                 if ($item.is('br')) $item.remove();
