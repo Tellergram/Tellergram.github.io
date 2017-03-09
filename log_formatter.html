@@ -106,14 +106,14 @@
                                 get text() {
                                     var output = '', bold = 0, italics = 0;
                                     for (var i = 0; i < this.plain_text.length; i++) {
-                                        if (this.bold[i] != null && this.bold[i] > 0) {
+                                        if (this.bold[i] != null) {
                                             if (this.bold[i] > bold && bold == 0) output += '<b>';
-                                            if (this.bold[i] < bold && bold == 0) output += '</b>';
+                                            if (this.bold[i] < bold && this.bold[i] == 0) output += '</b>';
                                             bold = this.bold[i];
                                         }
-                                        if (this.italics[i] != null && this.italics[i] > 0) {
+                                        if (this.italics[i] != null) {
                                             if (this.italics[i] > italics && italics == 0) output += '<i>';
-                                            if (this.italics[i] < italics && italics == 0) output += '</i>';
+                                            if (this.italics[i] < italics && this.italics[i] == 0) output += '</i>';
                                             italics = this.italics[i];
                                         }
                                     
