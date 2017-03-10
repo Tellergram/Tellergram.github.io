@@ -589,12 +589,12 @@
                             parent.cache.save();
                         }
 
-                        $('#output').html('<span style="word-wrap: break-word;">' + btoa(parent.input) + '</span>');
+                        $('#output').html('<span style="word-wrap: break-word;">' + btoa(unescape(encodeURIComponent(parent.input))) + '</span>');
                     },
                     
                     //IMPORT
                     debug_import: function() {
-                        var json = atob(prompt());
+                        var json = decodeURIComponent(escape(atob(prompt())));
                         parent.input = json;
                         parent.dom_pull_data();
                     }
