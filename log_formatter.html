@@ -577,18 +577,25 @@
                     
                     //DEBUG
                     debug: function () {
-                        var debug = {
-                            input: parent.input,
-                            settings: parent.settings
-                        };
-                        $('#output').html(JSON.stringify(debug));
+                        parent.dom_push_data();
+                        if (parent.input.length < 200 && /^((ftp|http|https):\/\/)?([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(parent.input.trim())){ //Dealing with url
+                            parent.input = parent.get_from_url(parent.input.trim('/n'));
+                            parent.input = parent.input.replace(/&/g, "&amp;")
+                                                   .replace(/</g, "&lt;")
+                                                   .replace(/>/g, "&gt;")
+                                                   .replace(/\n(\r)?/g,"<br>");
+                            
+                            $("#input").html(parent.input);
+                            parent.cache.save();
+                        }
+
+                        $('#output').html('<span style="word-wrap: break-word;">' + btoa(parent.input) + '</span>');
                     },
                     
                     //IMPORT
                     debug_import: function() {
-                        var json = JSON.parse(prompt());
-                        parent.input = json.input;
-                        parent.settings = json.settings;
+                        var json = atob(prompt());
+                        parent.input = json;
                         parent.dom_pull_data();
                     }
                 }
