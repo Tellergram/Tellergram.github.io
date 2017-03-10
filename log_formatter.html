@@ -377,19 +377,59 @@
                         return return_string;
                     },
                     
+                    //STRIP HTML
+                    strip_html: function(e) {
+                        // remove all empty tags
+                        $(e).contents()
+                        .filter(function(){ return this.nodeType == 8; })
+                        .remove();                        
+
+                        // replace all styles except bold and italic
+                        $.each($(e).find("*"), function(idx, val) {
+                            var $item = $(val);
+                            if ($item.length > 0){
+                                var font_weight = $item.css('font-weight'),
+                                    font_style = $item.css('font-style'),
+                                    display = $item.css('display'),
+                                    position = $item.css('position');
+
+                                if ($item.is('b') || font_weight == 'bold' || (!isNaN(parseFloat(font_weight)) && parseFloat(font_weight) > 400)) {
+                                    $item.wrap('<b></b>');
+                                }
+
+                                if ($item.is('i') || font_style == 'italic' || font_style == 'oblique') {
+                                    $item.wrap('<i></i>');
+                                }
+                                
+                                if ($item.is('p') || $item.is('br') || $item.is('div') || (display == 'block' && position != 'absolute')) {
+                                    $item.after('<br />');
+                                }
+                                if ($item.is('pre')) {
+                                    $item.html($item.html().replace(/\n(\r)?/g,"<br>"));
+                                }
+                                
+                                $item.contents().unwrap();
+                                
+                                if ($item.is('br')) $item.remove();
+                            }
+                        });
+                    
+                    },
+                    
                     //CONVERT
                     convert: function() {
                         parent.dom_push_data();
-                        if (parent.input.length < 200 && /^((ftp|http|https):\/\/)?([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(parent.input.trim())){ //Dealing with url
+                        if (parent.input.length < 200 && /^((ftp|http|https):\/\/)?([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$/.test(parent.input.trim())) { //Dealing with url
                             parent.input = parent.get_from_url(parent.input.trim('/n'));
                             parent.input = parent.input.replace(/&/g, "&amp;")
                                                    .replace(/</g, "&lt;")
                                                    .replace(/>/g, "&gt;")
                                                    .replace(/\n(\r)?/g,"<br>");
-                            
                             $("#input").html(parent.input);
-                            parent.cache.save();
                         }
+                        
+                        parent.strip_html($("#input"));
+                        parent.cache.save();
                         parent.output(parent.input);
                     },
                     
@@ -615,40 +655,8 @@
 
                         $(this).html($result.html());
                         
-                        // remove all empty tags
-                        $(this).contents()
-                        .filter(function(){ return this.nodeType == 8; })
-                        .remove();                        
-
-                        // replace all styles except bold and italic
-                        $.each($(this).find("*"), function(idx, val) {
-                            var $item = $(val);
-                            if ($item.length > 0){
-                                var font_weight = $item.css('font-weight'),
-                                    font_style = $item.css('font-style'),
-                                    display = $item.css('display'),
-                                    position = $item.css('position');
-
-                                if ($item.is('b') || font_weight == 'bold' || (!isNaN(parseFloat(font_weight)) && parseFloat(font_weight) > 400)) {
-                                    $item.wrap('<b></b>');
-                                }
-
-                                if ($item.is('i') || font_style == 'italic' || font_style == 'oblique') {
-                                    $item.wrap('<i></i>');
-                                }
-                                
-                                if ($item.is('p') || $item.is('br') || (display == 'block' && position != 'absolute')) {
-                                    $item.after('<br />');//wrap('<div></div>');
-                                }
-                                if ($item.is('pre')) {
-                                    $item.html($item.html().replace(/\n(\r)?/g,"<br>"));
-                                }
-                                
-                                $item.contents().unwrap();
-                                
-                                if ($item.is('br')) $item.remove();
-                            }
-                        });
+                        irc_log_formatter.strip_html(this);
+                        
                     } else if (clip_data.getData('text/rtf')) {
                         e.preventDefault();
                         var text = clip_data.getData('text/rtf');
@@ -685,22 +693,6 @@
                             
                             text = text.slice(0, match.index) + insert + text.slice(match.index + match[0].length);
                         }
-                        
-                        
-                                                
-                            /*.replace(ctrlCharPattern, "")
-                        
-                        
-                        var basicRtfPattern = /\{\*?\\[^{}]+;}|[{}]|\\[A-Za-z]+\n?(?:-?\d+)?[ ]?/g;
-                        var newLineSlashesPattern = /\\\n/g;
-                        var ctrlCharPattern = /\n\\f[0-9]\s/g;
-
-                        //Remove RTF Formatting, replace RTF new lines with real line breaks, and remove whitespace
-                        text = text
-                            /*.replace(ctrlCharPattern, "")
-                            .replace(basicRtfPattern, "")
-                            .replace(newLineSlashesPattern, "<br />")
-                            .trim();*/
                         
                         $(this).html(text);
                     } else if (clip_data.getData('text/plain')) {
