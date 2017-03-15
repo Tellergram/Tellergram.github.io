@@ -248,6 +248,18 @@
                         parent.dom_pull_data();
                         parent.cache.save();
                     },
+                    format_divided_spaced: function() {
+                        parent.settings.output_header = "";
+                        parent.settings.output_gm_post = "<p><b>[NICK]</b></p><br /><p>[POST]</p><hr>";
+                        parent.settings.output_player_post = "<p><b>[NICK]</b></p><br /><p>[POST]</p><hr>";
+                        parent.settings.output_footer = "";
+                        parent.settings.output_delimiter = "<p>";
+                        parent.settings.merge_consecutive_posts = true;
+                        parent.settings.remove_end = true;
+                        parent.settings.format_paragraphs = true;
+                        parent.dom_pull_data();
+                        parent.cache.save();
+                    },
                     format_table: function() {
                         parent.settings.output_header = "<table>";
                         parent.settings.output_gm_post = "<tr><td><b><p>[NICK]</p></b></td><td><p><b>[POST]</b></p></td></tr>";
@@ -503,10 +515,21 @@
                             
                             //MATCH & REMOVE NICK
                             var match_nick = nicks_re.exec(line.plain_text);
-                            if (match_nick) line.splice(0, match_nick.index + match_nick[0].length);
+                            
+                            //MATCH BRACKETED UNLISTED NICKS
+                            if (!match_nick && style == BRACKET_STYLE) {
+                                match_nick = /(&lt;)(~|•|\\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
+                            }
+                            
+                            if (match_nick) {
+                                line.splice(0, match_nick.index + match_nick[0].length);
+                                match_nick = match_nick[3];
+                            } else {
+                                match_nick = null;
+                            }
                             
                             //MATCH ROLLS
-                            if (match_nick && match_nick[3] == '[ATM]') {
+                            if (match_nick && match_nick == '[ATM]') {
                                 if (line.indexOf('=') != -1) { //FORMAT AS A ROLL
                                     var match_roll = /.*?[ ](".*?")?[ ]?(.*)/.exec(line);
                                     if (match_roll[1]) {
@@ -543,13 +566,13 @@
                             }
                             
                             //UPDATE NICK
-                            if (match_nick && match_nick[3] != '[ATM]') {
-                                if (current_post.nick && (current_post.nick != match_nick[3] || !parent.settings.merge_consecutive_posts)) { //Start a new post
+                            if (match_nick && match_nick != '[ATM]') {
+                                if (current_post.nick && (current_post.nick != match_nick || !parent.settings.merge_consecutive_posts)) { //Start a new post
                                     posts.push(current_post);
                                     current_post = new parent.Post();
                                 }
-                                current_post.nick = match_nick[3];
-                                current_post.gm = (gm_nicks.indexOf(match_nick[3]) !== -1);
+                                current_post.nick = match_nick;
+                                current_post.gm = (gm_nicks.indexOf(match_nick) !== -1);
                             }
                             
                             //MERGE LINES ENDING WITH ... OR ADD LINE
@@ -768,7 +791,8 @@
                     <a href="#" onclick="irc_log_formatter.format_plain()">Plain</a> |
                     <a href="#" onclick="irc_log_formatter.format_table()">Table</a> |
                     <a href="#" onclick="irc_log_formatter.format_paragraph()">Paragraph</a> |
-                    <a href="#" onclick="irc_log_formatter.format_divided()">Divided</a>
+                    <a href="#" onclick="irc_log_formatter.format_divided()">Divided</a> |
+                    <a href="#" onclick="irc_log_formatter.format_divided_spaced()">Divided (Spaced)</a> 
                 </span>
             </div>
             <center><button class="input_button" onclick="irc_log_formatter.convert()">Convert</button>&nbsp;<button class="input_button" onclick="irc_log_formatter.highlight_output()">Highlight</button></center>
