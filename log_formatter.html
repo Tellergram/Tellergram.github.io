@@ -171,8 +171,8 @@
                                 },
                                 concat: function (str) {
                                     this.plain_text += str.plain_text;
-                                    this.bold.extend(str.bold);
-                                    this.italics.extend(str.italics);
+                                    this.bold = this.bold.concat(str.bold);
+                                    this.italics = this.italics.concat(str.italics);
                                 },
                                 toString: function() {
                                     return this.text;
