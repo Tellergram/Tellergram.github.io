@@ -484,15 +484,46 @@
                             
                             //DISCARD LINES WITH SUSPECT CHARACTERS
                             if (line.trim().length == 0)  continue; //Blank Line
-                            if (line.indexOf(String.fromCharCode(9432)) !== -1)  continue; //(nickchange, Antioch logs)
-                            if (line.indexOf(String.fromCharCode(8592)) !== -1)  continue; //(left/quit, Antioch logs)
-                            if (line.indexOf(String.fromCharCode(8594)) !== -1)  continue; //(joined, Antioch logs)
-                            if (line.indexOf(String.fromCharCode(8596)) !== -1)  continue; //(nipped out, Antioch logs)
-                            if (line.indexOf(String.fromCharCode(8656)) !== -1)  continue; //(left, Panda logs)
+                            if (line.indexOf(String.fromCharCode(9432)) !== -1) continue; //(nickchange, Antioch logs)
+                            if (line.indexOf(String.fromCharCode(8592)) !== -1) continue; //(left/quit, Antioch logs)
+                            if (line.indexOf(String.fromCharCode(8594)) !== -1) continue; //(joined, Antioch logs)
+                            if (line.indexOf(String.fromCharCode(8596)) !== -1) continue; //(nipped out, Antioch logs)
+                            if (line.indexOf(String.fromCharCode(8656)) !== -1) continue; //(left, Panda logs)
                             if (line.startswith('&lt;-&gt;')) continue; //(nickchange, Nick logs)
                             if (line.startswith('&lt;--')) continue; //(left, Nick logs)
                             if (line.startswith('--&gt;')) continue; //(joined, Nick logs)
                             if (line.charAt(0) =="#") continue; //(irccloud header)
+                            if (line.startswith('-MemoServ-')) continue; //MemoServ
+                            
+                            //HANDLE ASTERISKS LINES
+                            var match = /^[ \t]*\*[ \t]+((.+?)[ ](?:(.*?)\(.*?\)(.*)|(.+)))/.exec(line.plain_text);
+                            if (match) {
+                                var full_text = match[1].toLowerCase();
+                                var user = match[2].toLowerCase();
+                                var message = (match[5]) ? match[5] : match[3].trim() + match[4].trim();
+                                message = message.toLowerCase();
+                                
+                                if (full_text.indexOf('loaded log from') == 0) continue;
+                                if (full_text.indexOf('now talking on') == 0) continue;
+                                if (full_text.indexOf('topic for') == 0) continue;
+                                if (full_text.indexOf('disconnected') == 0) continue;
+                                if (user == 'tin_mother') continue;
+                                if (user == 'chanserv') continue;
+                                if (user == 'botserv') continue;
+                                if (user == 'nickserv') continue;
+                                if (message == 'has quit') continue;
+                                if (message == 'has joined') continue;
+                                if (message == 'has left') continue;
+                                if (message.indexOf('is now known as') == 0) continue;
+                                if (message.indexOf('are now known as') == 0) continue;
+                                if (message.indexOf('sets mode') == 0) continue;
+                                if (message.indexOf('gives channel operator status') == 0) continue;
+
+                                console.log(full_text);
+                                console.log(user);
+                                console.log(message);
+                                console.log('---');
+                            }
                             
                             //CHECK FOR USERNAMES
                             var match = nicks_re.exec(line.plain_text);
@@ -511,18 +542,28 @@
                         var posts = [], current_post = new parent.Post();
                         
                         for (var i = 0, i_len = lines.length; i < i_len; i++) {
-                            var line = lines[i];
+                            var line = lines[i], asterisk = false;
                             
-                            //MATCH & REMOVE NICK
-                            var match_nick = nicks_re.exec(line.plain_text);
-                            
-                            //MATCH BRACKETED UNLISTED NICKS
-                            if (!match_nick && style == BRACKET_STYLE) {
-                                match_nick = /(&lt;)(~|•|\\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
+                            //MATCH NICKS
+                            if (style == BRACKET_STYLE) {
+                                var match_nick = /(&lt;)(~|•|\\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
+                            } else {
+                                var match_nick = nicks_re.exec(line.plain_text);
                             }
                             
+                            //MATCH ASTERISKS
+                            if (!match_nick && style == BRACKET_STYLE) {
+                                match_nick = /^([ \t]*\*[ \t](~|•|\\+|@|%)?)([A-Za-z0-9_\-\\\[\]{}\^`|]+)[ ]*/.exec(line.plain_text);
+                                asterisk = true;
+                            }
+                            
+                            //REMOVE NICK
                             if (match_nick) {
-                                line.splice(0, match_nick.index + match_nick[0].length);
+                                if (!asterisk) {
+                                    line.splice(0, match_nick.index + match_nick[0].length);
+                                } else {
+                                    line.splice(0, match_nick.index + match_nick[1].length);
+                                }
                                 match_nick = match_nick[3];
                             } else {
                                 match_nick = null;
@@ -547,10 +588,6 @@
                             
                             //REMOVE COMMENTS
                             if (parent.settings.remove_comments && (line.startswith("((") || line.endswith("))"))) continue;
-                            
-                            //REMOVE ...
-                            var match = /^\.{3,6}$/.exec(line.plain_text);
-                            if (match) continue;
 
                             //REMOVE ||, //, >>
                             var match = /(-)?[|\>\/]{1,8}$/.exec(line.plain_text);
@@ -574,6 +611,10 @@
                                 current_post.nick = match_nick;
                                 current_post.gm = (gm_nicks.indexOf(match_nick) !== -1);
                             }
+
+                            //REMOVE ...
+                            var match = /^\.{3,6}$/.exec(line.plain_text);
+                            if (match) continue;
                             
                             //MERGE LINES ENDING WITH ... OR ADD LINE
                             if (line.plain_text) {
