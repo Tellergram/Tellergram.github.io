@@ -546,14 +546,14 @@
                             
                             //MATCH NICKS
                             if (style == BRACKET_STYLE) {
-                                var match_nick = /(&lt;)(~|•|\\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
+                                var match_nick = /(&lt;)(~|•|\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
                             } else {
                                 var match_nick = nicks_re.exec(line.plain_text);
                             }
                             
                             //MATCH ASTERISKS
                             if (!match_nick && style == BRACKET_STYLE) {
-                                match_nick = /^([ \t]*\*[ \t](~|•|\\+|@|%)?)([A-Za-z0-9_\-\\\[\]{}\^`|]+)[ ]*/.exec(line.plain_text);
+                                match_nick = /^([ \t]*\*[ \t](~|•|\+|@|%)?)([A-Za-z0-9_\-\\\[\]{}\^`|]+)[ ]*/.exec(line.plain_text);
                                 asterisk = true;
                             }
                             
