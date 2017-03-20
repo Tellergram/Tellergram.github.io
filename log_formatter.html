@@ -458,9 +458,14 @@
                         var gm_nicks = $.map(parent.settings.gm.split(","), $.trim),
                             player_nicks = $.map(parent.settings.player.split(","), $.trim),
                             all_nicks = gm_nicks.concat(player_nicks);
-                            if (parent.settings.format_rolls) all_nicks.push('[ATM]');
-                            escaped_nicks = $.map( all_nicks, function(str) { return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"); }).join('|'),
-                            nicks_re = new RegExp("(&lt;)?(~|•|\\+|@|%)?(" + escaped_nicks + ")(:)?(&gt;)?[ ]*");
+                            
+                        if (parent.settings.format_rolls) all_nicks.push('[ATM]');
+                        
+                        var escaped_nicks = $.map( all_nicks, function(str) { return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"); }).join('|');
+                        var dot = String.fromCharCode(8226),
+                            nicks_re = new RegExp("(&lt;)?(~|" + dot + "|\\+|@|%)?(" + escaped_nicks + ")(:)?(&gt;)?[ ]*"),
+                            misc_nicks_re = new RegExp("(&lt;)(~|" + dot + "|\\+|@|%)?([\\\\A-Za-z0-9_\\-\\[\\]{}\\^`|]+)(&gt;)[ ]*"),
+                            asterisk_nicks_re = new RegExp("^([ \\t]*\\*[ \\t](~|" + dot + "|\\+|@|%)?)([\\\\A-Za-z0-9_\\-\\[\\]{}\\^`|]+)[ ]*");
                         
                         //REMOVE PROBLEMATIC SYMBOLS
                         input = input.replace(/<br\s*[\/]?>/gi,"\n")
@@ -546,14 +551,14 @@
                             
                             //MATCH NICKS
                             if (style == BRACKET_STYLE) {
-                                var match_nick = /(&lt;)(~|•|\+|@|%)?([A-Za-z0-9_\-\\\[\]{}\^`|]+)(&gt;)[ ]*/.exec(line.plain_text);
+                                var match_nick = misc_nicks_re.exec(line.plain_text);
                             } else {
                                 var match_nick = nicks_re.exec(line.plain_text);
                             }
                             
                             //MATCH ASTERISKS
                             if (!match_nick && style == BRACKET_STYLE) {
-                                match_nick = /^([ \t]*\*[ \t](~|•|\+|@|%)?)([A-Za-z0-9_\-\\\[\]{}\^`|]+)[ ]*/.exec(line.plain_text);
+                                match_nick = asterisk_nicks_re.exec(line.plain_text);
                                 asterisk = true;
                             }
                             
