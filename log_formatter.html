@@ -164,15 +164,39 @@
                                     return this;
                                 },
                                 startswith: function (a) {
+                                    if (typeof a !== 'string') {
+                                        for (var i = 0; i < a.length; i++) {
+                                            if (this.startswith(a[i])) return true;
+                                        }
+                                        return false;
+                                    }
+                                
                                     return (this.plain_text.substring(0, a.length) == a);
                                 },
                                 endswith: function (a) {
+                                    if (typeof a !== 'string') {
+                                        for (var i = 0; i < a.length; i++) {
+                                            if (this.endswith(a[i])) return true;
+                                        }
+                                        return false;
+                                    }
+                                
                                     return (this.plain_text.substring(this.plain_text.length - a.length) == a);
                                 },
                                 concat: function (str) {
                                     this.plain_text += str.plain_text;
                                     this.bold = this.bold.concat(str.bold);
                                     this.italics = this.italics.concat(str.italics);
+                                },
+                                append: function (str) {
+                                    var b = this.bold[this.bold.length-1]
+                                    var i = this.italics[this.italics.length-1]
+                                    for (var i = 0; i < str.length; i++) {
+                                        this.bold.push(b);
+                                        this.italics.push(i);
+                                    }
+                                    
+                                    this.plain_text += str;
                                 },
                                 toString: function() {
                                     return this.text;
@@ -628,6 +652,11 @@
                                     line.splice(0, 3);
                                     last_line.splice(last_line.length - 3);
                                     last_line.concat(line);
+                                } else if (parent.settings.detect_splits && last_line && !line.startswith(['((', '"', '*', '&nbsp;&nbsp;&nbsp;&nbsp;']) && !last_line.endswith(['.', '"', '-', '!', '?', '))'])) {
+                                    if (!line.startswith(' ') && !last_line.endswith(' ')) {
+                                        last_line.append(' ');
+                                    }
+                                    last_line.concat(line);
                                 } else {
                                     current_post.lines.push(line);
                                 }
@@ -826,6 +855,7 @@
                         <td>
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.remove_end"> Remove "||", "//", and ">>"<br />
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.detect_dots"> Merge on start/end "..."<br />
+                            <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.detect_splits"> Merge on split sentences<br />
                             <input type="checkbox" onchange="irc_log_formatter.cache.save()" data-model="settings.remove_comments"> Remove ((Comments))<br />
                         </td>
                     </tr>
