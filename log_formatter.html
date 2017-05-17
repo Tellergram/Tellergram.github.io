@@ -652,7 +652,7 @@
                                     line.splice(0, 3);
                                     last_line.splice(last_line.length - 3);
                                     last_line.concat(line);
-                                } else if (parent.settings.detect_splits && last_line && !line.startswith(['((', '"', '*', '&nbsp;&nbsp;&nbsp;&nbsp;']) && !last_line.endswith(['.', '"', '-', '!', '?', '))'])) {
+                                } else if (parent.settings.detect_splits && last_line && !line.startswith(['((', '"', '*', '&nbsp;&nbsp;&nbsp;&nbsp;']) && !last_line.endswith(['.', '"', '-', '!', '?', '))']) && !last_line.startswith('&nbsp;&nbsp;&nbsp;&nbsp;')) {
                                     if (!line.startswith(' ') && !last_line.endswith(' ')) {
                                         last_line.append(' ');
                                     }
