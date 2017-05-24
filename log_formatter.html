@@ -473,7 +473,7 @@
                     output: function(input) {
                         //POSSIBLE STYLES
                         var BRACKET_STYLE = 0;
-                        var COLUMN_STYLE = 1;
+                        var COLON_STYLE = 1;
                         var LINEBREAK_STYLE = 2;
                         
                         var style = BRACKET_STYLE;
@@ -558,7 +558,7 @@
                             var match = nicks_re.exec(line.plain_text);
                             if (match) {
                                 if (match[1] && match[5]) style = BRACKET_STYLE;
-                                if (match[4]) style = COLUMN_STYLE;
+                                if (match[4]) style = COLON_STYLE;
                                 if (match[0] == line.plain_text) style = LINEBREAK_STYLE;
                             }
                             
