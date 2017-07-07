@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Viewer</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        .app-container {
+            margin-top: 0px !important;
+        }
+    </style>
+    <script>
+        function fetch() {
+            //Get source
+            var match = /src=([^&#=]*)/.exec(window.location.search);
+            var src = decodeURIComponent(match[1]);
+            
+            //Extract ID
+            if (src.indexOf("/") !== -1) {
+                var match = /https?:\/\/docs.google.com\/document\/d\/(.*?)\//.exec(src);
+                var src = match[1];
+            }
+            
+            //Fetch source
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                  document.getElementById("content").innerHTML = this.responseText;
+                }
+            };
+            xhttp.open("GET", "https://docs.google.com/document/d/" + src + "/mobilebasic", true);
+            xhttp.send();
+        }
+    </script>
+</head>
+<body onload="fetch()">
+<div id="content"></p>
+</body>
+</html>
