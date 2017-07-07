@@ -2,10 +2,40 @@
 <html>
 <head>
     <title>Document Viewer</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <style>
+        body {
+            background-color: #EEE;
+        }
         .app-container {
             margin-top: 0px !important;
+        }
+        #content {
+            margin: 10pt auto;
+            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
+            background-color: #FFF;
+        }
+        
+        @media screen and (min-width: 500pt) {
+            #content {
+                min-width: 500pt;
+                width: min-content;
+            }
+        }
+        
+        img {
+            max-width: calc(100vw - 40px);
+            height: initial !important;
+        }
+        
+        span {
+            width: initial !important;
+            height: initial !important;
+        }
+        .hr {
+            border-bottom: .75pt solid #888;
+            margin: 7pt 0;
         }
     </style>
     <script>
@@ -24,15 +54,33 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                  document.getElementById("content").innerHTML = this.responseText;
+                   output(this.responseText);
                 }
             };
             xhttp.open("GET", "https://docs.google.com/document/d/" + src + "/mobilebasic", true);
             xhttp.send();
         }
+        
+        function output(output) {
+            //Get title
+            var match = /<title>(.*?)<\/title>/.exec(output);
+            if (match) {
+                document.title = match[1];
+            }
+            
+            //Remove space after hr
+            output = output.replace(/<hr><p.*?><span.*?><\/span><\/p>/gi, "<hr>");
+            
+            //Update all hr
+            output = output.replace(/<hr>/gi, "<div class='hr'></div>");
+            
+            document.getElementById("content").innerHTML = output;
+        }
+        
+        
     </script>
 </head>
 <body onload="fetch()">
-<div id="content"></p>
+<div id="content"><span style="display: block; height: 100vh; line-height:100vh; text-align:center">Loading . . .</span></p>
 </body>
 </html>
