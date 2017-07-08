@@ -20,16 +20,24 @@
 
         #content {
             margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .row {
+            margin: 0 -10pt;
+            text-align: center;
         }
         
         .page {
+            display: inline-block;
+            vertical-align: top;
             box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
             background-color: #FFF;
-            margin: 10pt 0;
+            margin: 10pt;
         }
         
         img {
-            max-width: calc(100vw - 40px);
+            max-width: 100%;
             height: initial !important;
         }
         
@@ -72,39 +80,57 @@
             background-color: rgba(52, 91, 138, 0.5);
         }
         
+        .pagebreak {
+            height: 1px;
+            background-color: #F00;
+        }
+        #ruler {
+            height: 1pt;
+            position: absolute;
+            visibility: none;
+        }
     </style>
     <script>
-        function GET(parameter) {
-            var re = new RegExp(parameter + '=([^&#=]*)'),
-                match = re.exec(window.location.search);
-            if (match) {
-                return decodeURIComponent(match[1]);
-            } else {
-                return null;
+        viewer_options = {
+            src: null,
+            width: 500,
+            height: null,
+            columns: 1,
+            merge: 0,
+            collapse: 0
+        }
+        
+        for (var property in viewer_options) {
+            if (viewer_options.hasOwnProperty(property)) {
+                var re = new RegExp(property + '=([^&#=]*)'),
+                    match = re.exec(window.location.search);
+                if (match) viewer_options[property] = decodeURIComponent(match[1]);
             }
         }
+        
+        function getOffset( el ) {
+            var _y = 0;
+            while( el && !isNaN( el.offsetTop ) ) {
+                _y += el.offsetTop - el.scrollTop;
+                el = el.offsetParent;
+            }
+            return _y;
+        }
     
-        function fetch() {
-            //Get source
-            var src = GET('src');
-            if (!src) return output('<span class="message">Error reading "src" parameter in URL.</span>');
-            
-            //Set edit button
-            document.getElementsByClassName("edit")[0].setAttribute("href", "https://docs.google.com/document/d/" + src + "/edit");
-            
-            //Get width
-            var width = GET('width');
-            if (!width) width = 500;
-            
-            var css = '@media screen and (min-width: ' + width + 'pt) {' +
-            '#content {' +
-                'min-width: ' + width + 'pt;' +
-                'width: min-content;' +
-                'width: -moz-min-content;' +
-                'width: -webkit-min-content;' +
-            '}',
-                head = document.head || document.getElementsByTagName('head')[0],
-                style = document.createElement('style');
+        function fetch() {            
+            //Set width and height
+            var head = document.head || document.getElementsByTagName('head')[0],
+                style = document.createElement('style'),
+                css = '@media screen and (min-width: ' + viewer_options['width'] + 'pt) {' +
+                '.page {' +
+                    'min-width: ' + viewer_options['width'] + 'pt;' +
+                    'width: min-content;' +
+                    'width: -moz-min-content;' +
+                    'width: -webkit-min-content;' +
+                '}';
+            if (viewer_options['height'] !== null) {
+                css = css + '.page{ min-height: ' + viewer_options['height'] + 'pt }';
+            }
 
             style.type = 'text/css';
             if (style.styleSheet){
@@ -114,12 +140,17 @@
             }
 
             head.appendChild(style);
-            
-            //Extract ID
-            if (src.indexOf("/") !== -1) {
-                var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(src);
-                var src = match[1];
-            }
+
+            //Get source
+            if (viewer_options['src'] == null) return output('<span class="message">Error reading "src" parameter in URL.</span>');
+
+            if (viewer_options['src'].indexOf("/") !== -1) {
+                var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(viewer_options['src']);
+                viewer_options['src'] = match[1];
+            }            
+
+            //Set edit button
+            document.getElementsByClassName("edit")[0].setAttribute("href", "https://docs.google.com/document/d/" + viewer_options['src'] + "/edit");
             
             //Fetch source
             var xhttp = new XMLHttpRequest();
@@ -132,13 +163,13 @@
                     }
                 }
             };
-            xhttp.open("GET", "https://docs.google.com/document/d/" + src + "/mobilebasic", true);
+            xhttp.open("GET", "https://docs.google.com/document/d/" + viewer_options['src'] + "/mobilebasic", true);
             xhttp.send();
         }
         
         function output(output) {
             //Wrap in page div
-            output = "<div class='page'>" + output + "</div>";
+            output = '<div class="row"><div class="page">' + output + '</div></div>';
         
             //Get title
             var match = /<title>(.*?)<\/title>/.exec(output);
@@ -155,14 +186,14 @@
             output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
             
             //Remove pagebreaks
-            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (GET('merge') === '1') ? '' : '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (viewer_options['merge'] === '1') ? '' : '<div class="pagebreak"></div>');
 
             //Fix HR
             output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
             output = output.replace(/<hr>/gi, "<div class='hr'></div>");
             
             //Collapse whitespace
-            if (GET('collapse') === '1') {
+            if (viewer_options['collapse'] === '1') {
                 output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
             }
             
@@ -170,18 +201,64 @@
             document.getElementById("content").innerHTML = output;
             
             //Fix Table Margins
-            var tables = document.getElementsByTagName("table");
-            for(var i = 0, max = tables.length; i < max; i++) 
-            {
-                if (tables[i].style.marginLeft[0] == "-") {
-                    tables[i].style.marginLeft = "0";
+            var elements = document.getElementsByTagName("table");
+            for(var i = 0, max = elements.length; i < max; i++) {
+                if (elements[i].style.marginLeft[0] == "-") {
+                    elements[i].style.marginLeft = "0";
                 }
             }
+            
+            //Pagebreaks
+            if (viewer_options['height'] !== null) {
+                var doc = document.getElementsByClassName("doc")[0],
+                    elements = doc.childNodes,
+                    ruler = document.getElementById('ruler').getBoundingClientRect(),
+                    multiplier = ruler['bottom'] - ruler['top'],
+                    pointer = getOffset(elements[0]),
+                    page = 0;
+
+                for(var i = 1, max = elements.length; i < max; i++) {
+                    var y = getOffset(elements[i]);
+                    
+                    if (elements[i].className == "pagebreak") {
+                        var pagebreak = elements[i];
+                        pointer = y;
+                        page++;
+                    } else if ((y - pointer) / multiplier > viewer_options['height']) {
+                        var pagebreak = document.createElement('div');
+                        pagebreak.className = 'pagebreak';
+                        doc.insertBefore(pagebreak, elements[i]);
+                        
+                        pointer = y;
+                        page++;
+                    }
+                    
+                    if (page >= viewer_options['columns']) {
+                        pagebreak.className = 'rowbreak';
+                        page = 0;
+                    }
+                }
+            }
+            output = document.getElementById("content").innerHTML;
+            
+            output = output.replace(/<div [^>]*?rowbreak[^>]*?><\/div>/gi, '</div></div></div></div></div><div class="row"><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+            
+            output = output.replace(/<div [^>]*?pagebreak[^>]*?><\/div>/gi, '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+            
+            document.getElementById("content").innerHTML = output;
+            
         }
     </script>
 </head>
 <body onload="fetch()">
+<div id="ruler"></div>
 <a target="_blank" class="edit">&#8599;</a>
-<div id="content"><div class="page"><span class="message">Loading . . .</span></div></p>
+<div id="content">
+    <div class="row">
+        <div class="page">
+            <span class="message">Loading . . .</span>
+        </div>
+    </div>
+</div>
 </body>
 </html>
