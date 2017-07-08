@@ -10,20 +10,21 @@
         }
         .app-container {
             margin-top: 0px !important;
-        }
-        #content {
-            margin: 10pt auto;
-            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
-            background-color: #FFF;
+            overflow: visible !important;
         }
         
-        @media screen and (min-width: 500pt) {
-            #content {
-                min-width: 500pt;
-                width: min-content;
-                width: -moz-min-content;
-                width: -webkit-min-content;
-            }
+        .doc {
+            padding: 20px !important;
+        }
+
+        #content {
+            margin: 0 auto;
+        }
+        
+        .page {
+            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
+            background-color: #FFF;
+            margin: 10pt 0;
         }
         
         img {
@@ -35,28 +36,72 @@
             width: initial !important;
             height: initial !important;
         }
+        
         .hr {
             border-bottom: .75pt solid #888;
             margin: 7pt 0;
         }
+        
+        .message {
+            display: block;
+            height: 100vh;
+            line-height:100vh;
+            text-align:center;
+        }
     </style>
     <script>
+        function GET(parameter) {
+            var re = new RegExp(parameter + '=([^&#=]*)'),
+                match = re.exec(window.location.search);
+            if (match) {
+                return decodeURIComponent(match[1]);
+            } else {
+                return null;
+            }
+        }
+    
         function fetch() {
             //Get source
-            var match = /src=([^&#=]*)/.exec(window.location.search);
-            var src = decodeURIComponent(match[1]);
+            var src = GET('src');
+            
+            //Get width
+            var width = GET('width');
+            if (!width) width = 500;
+            
+            var css = '@media screen and (min-width: ' + width + 'pt) {' +
+            '#content {' +
+                'min-width: ' + width + 'pt;' +
+                'width: min-content;' +
+                'width: -moz-min-content;' +
+                'width: -webkit-min-content;' +
+            '}',
+                head = document.head || document.getElementsByTagName('head')[0],
+                style = document.createElement('style');
+
+            style.type = 'text/css';
+            if (style.styleSheet){
+              style.styleSheet.cssText = css;
+            } else {
+              style.appendChild(document.createTextNode(css));
+            }
+
+            head.appendChild(style);
             
             //Extract ID
             if (src.indexOf("/") !== -1) {
-                var match = /https?:\/\/docs.google.com\/document\/d\/(.*?)\//.exec(src);
+                var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(src);
                 var src = match[1];
             }
             
             //Fetch source
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                   output(this.responseText);
+                if (this.readyState == 4) {
+                    if (this.status == 200) {
+                        output(this.responseText);
+                    } else {
+                        output('<span class="message">Error loading document. Please refresh page.</span>');
+                    }
                 }
             };
             xhttp.open("GET", "https://docs.google.com/document/d/" + src + "/mobilebasic", true);
@@ -64,25 +109,34 @@
         }
         
         function output(output) {
+            //Wrap in page div
+            output = "<div class='page'>" + output + "</div>";
+        
             //Get title
             var match = /<title>(.*?)<\/title>/.exec(output);
-            if (match) {
-                document.title = match[1];
-            }
+            if (match) document.title = match[1];
             
-            //Remove space after hr
-            output = output.replace(/<hr><p.*?><span.*?><\/span><\/p>/gi, "<hr>");
+            //Swap out links
+            var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
+            output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/([^\/]*?)\/[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
             
-            //Update all hr
+            //Remove pagebreaks
+            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (GET('break') === '1') ? '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">' : '');
+
+            //Fix HR
+            output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
             output = output.replace(/<hr>/gi, "<div class='hr'></div>");
+            
+            //Collapse whitespace
+            if (GET('collapse') === '1') {
+                output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
+            }
             
             document.getElementById("content").innerHTML = output;
         }
-        
-        
     </script>
 </head>
 <body onload="fetch()">
-<div id="content"><span style="display: block; height: 100vh; line-height:100vh; text-align:center">Loading . . .</span></p>
+<div id="content"><div class="page"><span class="message">Loading . . .</span></div></p>
 </body>
 </html>
