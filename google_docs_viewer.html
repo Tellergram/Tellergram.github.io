@@ -83,8 +83,16 @@
         
         .pagebreak {
             height: 1px;
+            margin-bottom: -1px;
             background-color: #F00;
         }
+        
+        .rowbreak {
+            height: 1px;
+            margin-bottom: -1px;
+            background-color: #00F;
+        }
+        
         #ruler {
             height: 1pt;
             position: absolute;
@@ -195,20 +203,22 @@
             
             //Pagebreaks
             var doc = document.getElementsByClassName("doc")[0],
-                elements = doc.childNodes,
+                elements = Array.from(doc.children),
                 ruler = document.getElementById('ruler').getBoundingClientRect(),
                 multiplier = ruler['bottom'] - ruler['top'],
                 pointer = getOffset(elements[0]),
                 page = 0;
 
             for(var i = 1, max = elements.length; i < max; i++) {
-                var y = getOffset(elements[i]);
+                var y = getOffset(elements[i]),
+                    d = elements[i].getBoundingClientRect()
+                    pagebreak = null;
                 
                 if (elements[i].className == "pagebreak") {
                     var pagebreak = elements[i];
                     pointer = y;
                     page++;
-                } else if (viewer_options['height'] !== null && (y - pointer) / multiplier > viewer_options['height']) {
+                } else if (viewer_options['height'] !== null && (y + d['bottom'] - d['top'] - pointer) / multiplier > viewer_options['height']) {
                     var pagebreak = document.createElement('div');
                     pagebreak.className = 'pagebreak';
                     doc.insertBefore(pagebreak, elements[i]);
@@ -217,7 +227,7 @@
                     page++;
                 }
                 
-                if (page >= viewer_options['columns']) {
+                if (pagebreak && page >= viewer_options['columns']) {
                     pagebreak.className = 'rowbreak';
                     page = 0;
                 }
