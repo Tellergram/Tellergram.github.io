@@ -51,7 +51,9 @@
         }
         
         .message {
-            display: block;
+            width: 550pt;
+            max-width: 100%;
+            background-color: #FFF;
             height: 100vh;
             line-height:100vh;
             text-align:center;
@@ -124,31 +126,6 @@
         }
     
         function fetch() {
-            //Set width, height, and background
-            var head = document.head || document.getElementsByTagName('head')[0],
-                style = document.createElement('style'),
-                css = '@media screen and (min-width: ' + viewer_options['width'] + 'pt) {' +
-                '.page {' +
-                    'min-width: ' + viewer_options['width'] + 'pt;' +
-                    'width: min-content;' +
-                    'width: -moz-min-content;' +
-                    'width: -webkit-min-content;' +
-                '}}' +
-                '.page {' +
-                    'background-color: ' + viewer_options['background'] + ';' +
-                    ((viewer_options['height'] !== null) ? 'min-height: ' + viewer_options['height'] + 'pt;' : '') +
-                '}';
-                console.log(css);
-
-            style.type = 'text/css';
-            if (style.styleSheet){
-              style.styleSheet.cssText = css;
-            } else {
-              style.appendChild(document.createTextNode(css));
-            }
-
-            head.appendChild(style);
-
             //Get source
             if (viewer_options['src'] == null) return output('<span class="message">Error reading "src" parameter in URL.</span>');
 
@@ -167,7 +144,7 @@
                     if (this.status == 200) {
                         output(this.responseText);
                     } else {
-                        output('<span class="message">Error loading document. Please refresh page.</span>');
+                        output('<div class="message">Error loading document. Please refresh page.</div>');
                     }
                 }
             };
@@ -253,6 +230,30 @@
             
             document.getElementById("content").innerHTML = output;
             
+            //Set width, height, and background
+            var head = document.head || document.getElementsByTagName('head')[0],
+                style = document.createElement('style'),
+                css = '@media screen and (min-width: ' + viewer_options['width'] + 'pt) {' +
+                '.page {' +
+                    'min-width: ' + viewer_options['width'] + 'pt;' +
+                    'width: min-content;' +
+                    'width: -moz-min-content;' +
+                    'width: -webkit-min-content;' +
+                '}}' +
+                '.page {' +
+                    'background-color: ' + viewer_options['background'] + ';' +
+                    ((viewer_options['height'] !== null) ? 'min-height: ' + viewer_options['height'] + 'pt;' : '') +
+                '}';
+                console.log(css);
+
+            style.type = 'text/css';
+            if (style.styleSheet){
+              style.styleSheet.cssText = css;
+            } else {
+              style.appendChild(document.createTextNode(css));
+            }
+
+            head.appendChild(style);
         }
     </script>
 </head>
@@ -262,7 +263,7 @@
 <div id="content">
     <div class="row">
         <div class="page">
-            <span class="message">Loading . . .</span>
+            <div class="message">Loading . . .</div>
         </div>
     </div>
 </div>
