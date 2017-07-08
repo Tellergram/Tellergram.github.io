@@ -173,7 +173,7 @@
         
             //Get title
             var match = /<title>(.*?)<\/title>/.exec(output);
-            if (match) document.title = match[1];
+            if (match) document.title = decodeURIComponent(match[1]);
             
             //Set image resolution to maximum
             output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
