@@ -11,7 +11,7 @@
         }
         .app-container {
             margin-top: 0px !important;
-            overflow: visible !important;
+            overflow-y: visible !important;
         }
         
         .doc {
@@ -51,7 +51,7 @@
         }
         
         .edit {
-            position: absolute;
+            position: fixed;
             width: 30px;
             height: 30px;
             line-height: 30px;
@@ -65,6 +65,7 @@
             -webkit-border-radius: 0px 0px 0px 10px;
             border: 0px solid #000000;
             text-decoration: none;
+            z-index: 10;
         }
         
         .edit:hover {
@@ -147,7 +148,7 @@
             output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
             
             //Set target to new tabindex
-            output = output.replace(/href="/gi, 'target="_blank" href="');
+            output = output.replace(/href="([^#])/gi, 'target="_blank" href="$1');
             
             //Swap out google links
             var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
@@ -165,7 +166,17 @@
                 output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
             }
             
+            //Render Output
             document.getElementById("content").innerHTML = output;
+            
+            //Fix Table Margins
+            var tables = document.getElementsByTagName("table");
+            for(var i = 0, max = tables.length; i < max; i++) 
+            {
+                if (tables[i].style.marginLeft[0] == "-") {
+                    tables[i].style.marginLeft = "0";
+                }
+            }
         }
     </script>
 </head>
