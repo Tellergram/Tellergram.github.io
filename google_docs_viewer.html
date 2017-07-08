@@ -116,6 +116,9 @@
             var match = /<title>(.*?)<\/title>/.exec(output);
             if (match) document.title = match[1];
             
+            //Set image resolution to maximum
+            output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
+
             //Swap out google links
             var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
             output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
