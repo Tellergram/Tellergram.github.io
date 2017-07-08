@@ -116,12 +116,12 @@
             var match = /<title>(.*?)<\/title>/.exec(output);
             if (match) document.title = match[1];
             
-            //Swap out links
+            //Swap out google links
             var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
-            output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/([^\/]*?)\/[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
+            output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
             
             //Remove pagebreaks
-            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (GET('break') === '1') ? '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">' : '');
+            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (GET('merge') === '1') ? '' : '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
 
             //Fix HR
             output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
