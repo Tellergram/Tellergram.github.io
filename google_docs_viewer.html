@@ -4,6 +4,7 @@
     <title>Document Viewer</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" type="text/css" href="normalize.css">
     <style>
         body {
             background-color: #EEE;
@@ -48,6 +49,28 @@
             line-height:100vh;
             text-align:center;
         }
+        
+        .edit {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            background-color: rgba(136, 136, 136, 0.5);
+            color: #FFF;
+            top: 0;
+            right: 0;
+            border-radius: 0px 0px 0px 10px;
+            -moz-border-radius: 0px 0px 0px 10px;
+            -webkit-border-radius: 0px 0px 0px 10px;
+            border: 0px solid #000000;
+            text-decoration: none;
+        }
+        
+        .edit:hover {
+            background-color: rgba(52, 91, 138, 0.5);
+        }
+        
     </style>
     <script>
         function GET(parameter) {
@@ -63,6 +86,10 @@
         function fetch() {
             //Get source
             var src = GET('src');
+            if (!src) return output('<span class="message">Error reading "src" parameter in URL.</span>');
+            
+            //Set edit button
+            document.getElementsByClassName("edit")[0].setAttribute("href", "https://docs.google.com/document/d/" + src + "/edit");
             
             //Get width
             var width = GET('width');
@@ -118,7 +145,10 @@
             
             //Set image resolution to maximum
             output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
-
+            
+            //Set target to new tabindex
+            output = output.replace(/href="/gi, 'target="_blank" href="');
+            
             //Swap out google links
             var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
             output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
@@ -140,6 +170,7 @@
     </script>
 </head>
 <body onload="fetch()">
+<a target="_blank" class="edit">&#8599;</a>
 <div id="content"><div class="page"><span class="message">Loading . . .</span></div></p>
 </body>
 </html>
