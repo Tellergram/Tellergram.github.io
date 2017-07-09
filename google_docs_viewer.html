@@ -246,6 +246,7 @@
                 css = '@media screen and (min-width: ' + viewer_options['width'] + 'pt) {' +
                 '.page {' +
                     'min-width: ' + viewer_options['width'] + 'pt;' +
+                    'width: ' + viewer_options['width'] + 'pt;' +
                     'width: min-content;' +
                     'width: -moz-min-content;' +
                     'width: -webkit-min-content;' +
@@ -264,6 +265,11 @@
             }
 
             head.appendChild(style);
+            
+            //Scroll to Hash
+            var hash = window.location.hash;
+            window.location.hash = "";
+            window.location.hash = hash;
         }
     </script>
 </head>
