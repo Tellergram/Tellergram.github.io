@@ -102,180 +102,223 @@
         }
     </style>
     <script>
-        viewer_options = {
-            src: null,
-            width: 550,
-            height: null,
-            columns: 1,
-            merge: 0,
-            collapse: 0,
-            background: "#FFF"
-        }
-        
-        for (var property in viewer_options) {
-            if (viewer_options.hasOwnProperty(property)) {
-                var re = new RegExp(property + '=([^&#=]*)'),
-                    match = re.exec(window.location.search);
-                if (match) viewer_options[property] = decodeURIComponent(match[1]);
-            }
-        }
-        
-        function decodeHtml(html) {
-            var txt = document.createElement("textarea");
-            txt.innerHTML = html;
-            return txt.value;
-        }
-        
-        function getOffset( el ) {
-            var _y = 0;
-            while( el && !isNaN( el.offsetTop ) ) {
-                _y += el.offsetTop - el.scrollTop;
-                el = el.offsetParent;
-            }
-            return _y;
-        }
-    
-        function fetch() {
-            //Get source
-            if (viewer_options['src'] == null) return output('<span class="message">Error reading "src" parameter in URL.</span>');
+        (function() {
+            function GoogleDocViewerAppFactory() {
+                var app = {
+                    api_key: "AIzaSyD1EsDgMLhcZZ-aiENeqppgtsLfYxr3gp8",
+                    content: null,
+                    options: {
+                        src: null,
+                        width: 550,
+                        height: null,
+                        columns: 1,
+                        merge: 0,
+                        collapse: 0,
+                        background: "#FFF"
+                    },
+                    loaded: {
+                        src: false,
+                        formatting: false
+                    },
+                    decodeHtml: function(html) {
+                        var txt = document.createElement("textarea");
+                        txt.innerHTML = html;
+                        return txt.value;
+                    },
+                    getYOffset: function( el ) {
+                        var _y = 0;
+                        while( el && !isNaN( el.offsetTop ) ) {
+                            _y += el.offsetTop - el.scrollTop;
+                            el = el.offsetParent;
+                        }
+                        return _y;
+                    },
+                    init: function() {
+                        //Get options from URL
+                        for (var property in app.options) {
+                            if (app.options.hasOwnProperty(property)) {
+                                var re = new RegExp(property + '=([^&#=]*)'),
+                                    match = re.exec(window.location.search);
+                                if (match) app.options[property] = decodeURIComponent(match[1]);
+                            }
+                        }
+                            
+                        //Get source
+                        if (app.options['src'] == null) return output('<span class="message">Error reading "src" parameter in URL.</span>');
 
-            if (viewer_options['src'].indexOf("/") !== -1) {
-                var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(viewer_options['src']);
-                viewer_options['src'] = match[1];
-            }            
+                        if (app.options['src'].indexOf("/") !== -1) {
+                            var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(app.options['src']);
+                            app.options['src'] = match[1];
+                        }
+                        
+                        //Set edit button
+                        document.getElementsByClassName("edit")[0].setAttribute("href", "https://docs.google.com/document/d/" + app.options['src'] + "/edit");
+                    
+                        //Fetch source
+                        var xhttp = new XMLHttpRequest();
+                        xhttp.onreadystatechange = function() {
+                            if (this.readyState == 4) {
+                                if (this.status == 200) {
+                                    app.content = this.responseText;
+                                    app.loaded.src = true;
+                                    app.render();
+                                } else {
+                                    output('<div class="message">Error loading document. Please refresh page.</div>');
+                                }
+                            }
+                        };
+                        xhttp.open("GET", "https://docs.google.com/document/d/" + app.options['src'] + "/mobilebasic", true);
+                        xhttp.send();
+                        
+                        //Fetch formatting
+                        var xhttp = new XMLHttpRequest();
+                        xhttp.onreadystatechange = function() {
+                            if (this.readyState == 4) {
+                                if (this.status == 200) {
+                                    var data = JSON.parse(this.responseText)['description'];
+                                    
+                                    for (var property in app.options) {
+                                        if (app.options.hasOwnProperty(property)) {
+                                            var re = new RegExp(property + '=([^&,=]*)'),
+                                                match = re.exec(data);
+                                            if (match) app.options[property] = decodeURIComponent(match[1]);
+                                        }
+                                    }
+                                    app.loaded.formatting = true;
+                                    app.render();
+                                } else {
+                                    output('<div class="message">Error loading document style. Please refresh page.</div>');
+                                }
+                            }
+                        };
+                        xhttp.open("GET", "https://www.googleapis.com/drive/v2/files/" + app.options['src'] + "?key=" + app.api_key, true);
+                        xhttp.send();
+                    },
+                    render: function() {
+                        if (app.loaded.src && app.loaded.formatting) {
+                            app.output(app.content);
+                            app.content = null;
+                        }
+                    },
+                    output: function(output) {
+                        //Wrap in page div
+                        output = '<div class="row"><div class="page">' + output + '</div></div>';
+                    
+                        //Get title
+                        var match = /<title>(.*?)<\/title>/.exec(output);
+                        if (match) document.title = app.decodeHtml(match[1]);
+                        
+                        //Set image resolution to maximum
+                        output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
+                        
+                        //Set target to new tabindex
+                        output = output.replace(/href="([^#])/gi, 'target="_blank" href="$1');
+                        
+                        //Swap out google links
+                        var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
+                        output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
+                        
+                        //Remove pagebreaks
+                        output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (app.options['merge'] === '1') ? '' : '<div class="pagebreak"></div>');
 
-            //Set edit button
-            document.getElementsByClassName("edit")[0].setAttribute("href", "https://docs.google.com/document/d/" + viewer_options['src'] + "/edit");
-            
-            //Fetch source
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4) {
-                    if (this.status == 200) {
-                        output(this.responseText);
-                    } else {
-                        output('<div class="message">Error loading document. Please refresh page.</div>');
+                        //Fix HR
+                        output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
+                        output = output.replace(/<hr>/gi, "<div class='hr'></div>");
+                        
+                        //Collapse whitespace
+                        if (app.options['collapse'] === '1') {
+                            output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
+                        }
+                        
+                        //Render Output
+                        document.getElementById("content").innerHTML = output;
+                        
+                        //Fix Table Margins
+                        var elements = document.getElementsByTagName("table");
+                        for(var i = 0, max = elements.length; i < max; i++) {
+                            if (elements[i].style.marginLeft[0] == "-") {
+                                elements[i].style.marginLeft = "0";
+                            }
+                        }
+                        
+                        //Pagebreaks
+                        var doc = document.getElementsByClassName("doc")[0],
+                            elements = Array.from(doc.children),
+                            ruler = document.getElementById('ruler').getBoundingClientRect(),
+                            multiplier = ruler['bottom'] - ruler['top'],
+                            pointer = app.getYOffset(elements[0]),
+                            page = 0;
+
+                        for(var i = 1, max = elements.length; i < max; i++) {
+                            var y = app.getYOffset(elements[i]),
+                                d = elements[i].getBoundingClientRect()
+                                pagebreak = null;
+                            
+                            if (elements[i].className == "pagebreak") {
+                                var pagebreak = elements[i];
+                                pointer = y;
+                                page++;
+                            } else if (app.options['height'] !== null && (y + d['bottom'] - d['top'] - pointer) / multiplier > app.options['height']) {
+                                var pagebreak = document.createElement('div');
+                                pagebreak.className = 'pagebreak';
+                                doc.insertBefore(pagebreak, elements[i]);
+                                
+                                pointer = y;
+                                page++;
+                            }
+                            
+                            if (pagebreak && page >= app.options['columns']) {
+                                pagebreak.className = 'rowbreak';
+                                page = 0;
+                            }
+                        }
+                        output = document.getElementById("content").innerHTML;
+                        
+                        output = output.replace(/<div [^>]*?rowbreak[^>]*?><\/div>/gi, '</div></div></div></div></div><div class="row"><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+                        
+                        output = output.replace(/<div [^>]*?pagebreak[^>]*?><\/div>/gi, '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+                        
+                        document.getElementById("content").innerHTML = output;
+                        
+                        //Set width, height, and background
+                        var head = document.head || document.getElementsByTagName('head')[0],
+                            style = document.createElement('style'),
+                            css = '@media screen and (min-width: ' + app.options['width'] + 'pt) {' +
+                            '.page {' +
+                                'min-width: ' + app.options['width'] + 'pt;' +
+                                'width: ' + app.options['width'] + 'pt;' +
+                                'width: min-content;' +
+                                'width: -moz-min-content;' +
+                                'width: -webkit-min-content;' +
+                            '}}' +
+                            '.page {' +
+                                'background-color: ' + app.options['background'] + ';' +
+                                ((app.options['height'] !== null) ? 'min-height: ' + app.options['height'] + 'pt;' : '') +
+                            '}';
+
+                        style.type = 'text/css';
+                        if (style.styleSheet){
+                          style.styleSheet.cssText = css;
+                        } else {
+                          style.appendChild(document.createTextNode(css));
+                        }
+
+                        head.appendChild(style);
+                        
+                        //Scroll to Hash
+                        var hash = window.location.hash;
+                        window.location.hash = "";
+                        window.location.hash = hash;
                     }
                 }
-            };
-            xhttp.open("GET", "https://docs.google.com/document/d/" + viewer_options['src'] + "/mobilebasic", true);
-            xhttp.send();
-        }
-        
-        function output(output) {
-            //Wrap in page div
-            output = '<div class="row"><div class="page">' + output + '</div></div>';
-        
-            //Get title
-            var match = /<title>(.*?)<\/title>/.exec(output);
-            if (match) document.title = decodeHtml(match[1]);
-            
-            //Set image resolution to maximum
-            output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
-            
-            //Set target to new tabindex
-            output = output.replace(/href="([^#])/gi, 'target="_blank" href="$1');
-            
-            //Swap out google links
-            var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
-            output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
-            
-            //Remove pagebreaks
-            output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (viewer_options['merge'] === '1') ? '' : '<div class="pagebreak"></div>');
-
-            //Fix HR
-            output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
-            output = output.replace(/<hr>/gi, "<div class='hr'></div>");
-            
-            //Collapse whitespace
-            if (viewer_options['collapse'] === '1') {
-                output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
-            }
-            
-            //Render Output
-            document.getElementById("content").innerHTML = output;
-            
-            //Fix Table Margins
-            var elements = document.getElementsByTagName("table");
-            for(var i = 0, max = elements.length; i < max; i++) {
-                if (elements[i].style.marginLeft[0] == "-") {
-                    elements[i].style.marginLeft = "0";
-                }
-            }
-            
-            //Pagebreaks
-            var doc = document.getElementsByClassName("doc")[0],
-                elements = Array.from(doc.children),
-                ruler = document.getElementById('ruler').getBoundingClientRect(),
-                multiplier = ruler['bottom'] - ruler['top'],
-                pointer = getOffset(elements[0]),
-                page = 0;
-
-            for(var i = 1, max = elements.length; i < max; i++) {
-                var y = getOffset(elements[i]),
-                    d = elements[i].getBoundingClientRect()
-                    pagebreak = null;
                 
-                if (elements[i].className == "pagebreak") {
-                    var pagebreak = elements[i];
-                    pointer = y;
-                    page++;
-                } else if (viewer_options['height'] !== null && (y + d['bottom'] - d['top'] - pointer) / multiplier > viewer_options['height']) {
-                    var pagebreak = document.createElement('div');
-                    pagebreak.className = 'pagebreak';
-                    doc.insertBefore(pagebreak, elements[i]);
-                    
-                    pointer = y;
-                    page++;
-                }
-                
-                if (pagebreak && page >= viewer_options['columns']) {
-                    pagebreak.className = 'rowbreak';
-                    page = 0;
-                }
+                return app;
             }
-            output = document.getElementById("content").innerHTML;
-            
-            output = output.replace(/<div [^>]*?rowbreak[^>]*?><\/div>/gi, '</div></div></div></div></div><div class="row"><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
-            
-            output = output.replace(/<div [^>]*?pagebreak[^>]*?><\/div>/gi, '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
-            
-            document.getElementById("content").innerHTML = output;
-            
-            //Set width, height, and background
-            var head = document.head || document.getElementsByTagName('head')[0],
-                style = document.createElement('style'),
-                css = '@media screen and (min-width: ' + viewer_options['width'] + 'pt) {' +
-                '.page {' +
-                    'min-width: ' + viewer_options['width'] + 'pt;' +
-                    'width: ' + viewer_options['width'] + 'pt;' +
-                    'width: min-content;' +
-                    'width: -moz-min-content;' +
-                    'width: -webkit-min-content;' +
-                '}}' +
-                '.page {' +
-                    'background-color: ' + viewer_options['background'] + ';' +
-                    ((viewer_options['height'] !== null) ? 'min-height: ' + viewer_options['height'] + 'pt;' : '') +
-                '}';
-                console.log(css);
-
-            style.type = 'text/css';
-            if (style.styleSheet){
-              style.styleSheet.cssText = css;
-            } else {
-              style.appendChild(document.createTextNode(css));
-            }
-
-            head.appendChild(style);
-            
-            //Scroll to Hash
-            var hash = window.location.hash;
-            window.location.hash = "";
-            window.location.hash = hash;
-        }
+            GoogleDocViewerApp = GoogleDocViewerAppFactory();
+        }())
     </script>
 </head>
-<body onload="fetch()">
+<body onload="GoogleDocViewerApp.init()">
 <div id="ruler"></div>
 <a target="_blank" class="edit">&#8599;</a>
 <div id="content">
