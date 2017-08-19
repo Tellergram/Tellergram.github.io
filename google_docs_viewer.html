@@ -163,7 +163,7 @@
                                     app.loaded.src = true;
                                     app.render();
                                 } else {
-                                    output('<div class="message">Error loading document. Please refresh page.</div>');
+                                    app.output('<div class="message">Error loading document. Please refresh page.</div>');
                                 }
                             }
                         };
@@ -186,8 +186,15 @@
                                     }
                                     app.loaded.formatting = true;
                                     app.render();
+                                    
+                                } else if (this.status == 403) {
+                                    app.output('<div class="message">Error loading document style. Rendering anyway...</div>');
+                                    setTimeout(function() {
+                                        app.loaded.formatting = true;
+                                        app.render();
+                                    }, 1000);
                                 } else {
-                                    output('<div class="message">Error loading document style. Please refresh page.</div>');
+                                    app.output('<div class="message">Error loading document style. Please refresh page.</div>');
                                 }
                             }
                         };
@@ -220,7 +227,11 @@
                         
                         //Remove pagebreaks
                         output = output.replace(/<hr style="page-break-before:always;display:none;">/gi, (app.options['merge'] === '1') ? '' : '<div class="pagebreak"></div>');
-
+                        
+                        //Fix Non-Breaking Spaces
+                        output = output.replace(/&nbsp;/gi, "&#8200;");
+                        output = output.replace(/ /gi, "&#8200;"); // Non-breaking space character
+                        
                         //Fix HR
                         output = output.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
                         output = output.replace(/<hr>/gi, "<div class='hr'></div>");
@@ -242,34 +253,37 @@
                         }
                         
                         //Pagebreaks
-                        var doc = document.getElementsByClassName("doc")[0],
-                            elements = Array.from(doc.children),
-                            ruler = document.getElementById('ruler').getBoundingClientRect(),
-                            multiplier = ruler['bottom'] - ruler['top'],
-                            pointer = app.getYOffset(elements[0]),
-                            page = 0;
-
-                        for(var i = 1, max = elements.length; i < max; i++) {
-                            var y = app.getYOffset(elements[i]),
-                                d = elements[i].getBoundingClientRect()
-                                pagebreak = null;
-                            
-                            if (elements[i].className == "pagebreak") {
-                                var pagebreak = elements[i];
-                                pointer = y;
-                                page++;
-                            } else if (app.options['height'] !== null && (y + d['bottom'] - d['top'] - pointer) / multiplier > app.options['height']) {
-                                var pagebreak = document.createElement('div');
-                                pagebreak.className = 'pagebreak';
-                                doc.insertBefore(pagebreak, elements[i]);
-                                
-                                pointer = y;
-                                page++;
-                            }
-                            
-                            if (pagebreak && page >= app.options['columns']) {
-                                pagebreak.className = 'rowbreak';
+                        var doc = document.getElementsByClassName("doc")[0];
+                        
+                        if (doc) {
+                            var elements = Array.from(doc.children),
+                                ruler = document.getElementById('ruler').getBoundingClientRect(),
+                                multiplier = ruler['bottom'] - ruler['top'],
+                                pointer = app.getYOffset(elements[0]),
                                 page = 0;
+
+                            for(var i = 1, max = elements.length; i < max; i++) {
+                                var y = app.getYOffset(elements[i]),
+                                    d = elements[i].getBoundingClientRect()
+                                    pagebreak = null;
+                                
+                                if (elements[i].className == "pagebreak") {
+                                    var pagebreak = elements[i];
+                                    pointer = y;
+                                    page++;
+                                } else if (app.options['height'] !== null && (y + d['bottom'] - d['top'] - pointer) / multiplier > app.options['height']) {
+                                    var pagebreak = document.createElement('div');
+                                    pagebreak.className = 'pagebreak';
+                                    doc.insertBefore(pagebreak, elements[i]);
+                                    
+                                    pointer = y;
+                                    page++;
+                                }
+                                
+                                if (pagebreak && page >= app.options['columns']) {
+                                    pagebreak.className = 'rowbreak';
+                                    page = 0;
+                                }
                             }
                         }
                         output = document.getElementById("content").innerHTML;
