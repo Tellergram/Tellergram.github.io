@@ -143,8 +143,8 @@
                             }
                         }
                             
-                        //Get source
-                        if (app.options['src'] == null) return output('<span class="message">Error reading "src" parameter in URL.</span>');
+                        //Get source. If it's not specified, show the help document.
+                        if (app.options['src'] == null) app.options['src'] = "1mVmC2_YuHqVIlvoHiKeEpqWLJJkEh5YlmKNcThoOG2w";
 
                         if (app.options['src'].indexOf("/") !== -1) {
                             var match = /https?:\/\/docs\.google\.com\/document\/d\/(.*?)\//.exec(app.options['src']);
