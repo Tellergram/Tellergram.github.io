@@ -223,6 +223,9 @@
                         
                         //Swap out google links
                         var match = /(.*src=).*?((?:&|$).*)/.exec(document.location.href);
+                        if (match == null) {
+                            var match = /(^).*?((?:&|$).*)/.exec(document.location.href);
+                        }
                         output = output.replace(/href="[^>]*?https?:\/\/docs\.google\.com\/document\/d\/(.*?)(?:\/|%26)[^>]*?"/gi, 'href="' + match[1] + '$1' + match[2] + '"');
                         
                         //Remove pagebreaks
