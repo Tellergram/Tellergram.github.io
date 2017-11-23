@@ -218,7 +218,7 @@
                         //Set image resolution to maximum
                         output = output.replace(/(src="https?:\/\/.*?\.googleusercontent\.com\/.*?)=.*?"/gi, '$1=s6000"');
                         
-                        //Set target to new tabindex
+                        //Set target to new tab
                         output = output.replace(/href="([^#])/gi, 'target="_blank" href="$1');
                         
                         //Swap out google links
@@ -244,6 +244,9 @@
                             output = output.replace(/(<(p|h1|h2|h3|h4)[^>]*?><span[^>]*?><\/span><\/(p|h1|h2|h3|h4)>){2,8}/gi, "$1");
                         }
                         
+                        //Fix list indentation
+                        output = output.replace(/<li[^>]*style=".*?padding-left:(-[^;]*).*?margin-left:([^;]*);/gi, '$&text-indent:calc(0pt - $2 - $1);');
+
                         //Render Output
                         document.getElementById("content").innerHTML = output;
                         
