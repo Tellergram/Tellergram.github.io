@@ -21,7 +21,6 @@
             overflow-y: visible;
             padding-bottom: 1px;
         }
-
         
         body {
             background-color: #EEE;
@@ -44,15 +43,18 @@
         .row {
             margin: 0 -10pt;
             text-align: center;
-            max-width: 100%;
         }
 
         .page {
             display: inline-block;
             vertical-align: top;
-            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
-            margin: 10pt;
+            padding: 10pt;
             max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .page-content {
+            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
         }
 
         li {
@@ -325,16 +327,18 @@
                     //Set width, height, and background
                     var head = document.head || document.getElementsByTagName('head')[0],
                         style = document.createElement('style'),
-                        css = '@media screen and (min-width: ' + options['width'] + 'pt) {' +
+                        css = '@media screen and (min-width: ' + (options['width']) + 'pt) {' +
                         '.page {' +
-                            'min-width: ' + options['width'] + 'pt;' +
-                            'width: ' + options['width'] + 'pt;' +
+                            'min-width: ' + (options['width'] + 20) + 'pt;' +
+                            'width: ' + (options['width'] + 20) + 'pt;' +
                             'width: min-content;' +
                             'width: -moz-min-content;' +
                             'width: -webkit-min-content;' +
                         '}}' +
-                        '.page {' +
+                        '.page-content {' +
                             'background-color: ' + options['background'] + ';' +
+                        '}' +
+                        '.page {' +
                             ((options['height'] !== null) ? 'min-height: ' + options['height'] + 'pt;' : '') +
                         '}';
 
@@ -357,7 +361,7 @@
             
             function preFormatContent() {
                 //Wrap in page div
-                content = '<div class="row"><div class="page">' + content + '</div></div>';
+                content = '<div class="row"><div class="page"><div class="page-content">' + content + '</div></div></div>';
             
                 //Get title
                 var match = /<title>(.*?)<\/title>/.exec(content);
@@ -459,8 +463,8 @@
                 }
 
                 document.getElementById("content").innerHTML = document.getElementById("content").innerHTML
-                    .replace(/<div [^>]*?rowbreak[^>]*?><\/div>/gi, '</div></div></div></div></div><div class="row"><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">')
-                    .replace(/<div [^>]*?pagebreak[^>]*?><\/div>/gi, '</div></div></div></div><div class="page"><div class="app-container"><div class="doc-container"><div class="doc">');
+                    .replace(/<div [^>]*?rowbreak[^>]*?><\/div>/gi, '</div></div></div></div></div></div><div class="row"><div class="page"><div class="page-content"><div class="app-container"><div class="doc-container"><div class="doc">')
+                    .replace(/<div [^>]*?pagebreak[^>]*?><\/div>/gi, '</div></div></div></div></div><div class="page"><div class="page-content"><div class="app-container"><div class="doc-container"><div class="doc">');
             }
 
             // Public functions
