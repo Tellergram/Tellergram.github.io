@@ -6,6 +6,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" type="text/css" href="normalize.css">
     <style>
+        ::-webkit-scrollbar {
+            -webkit-appearance: none; width: 4px; hiehgt: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            border-radius: 4px;
+            background-color: rgba(128, 128, 128, .5);
+            box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+        }
         body {
             background-color: #EEE;
         }
@@ -58,6 +66,10 @@
             border-bottom: .75pt solid #888;
             margin: 7pt 0;
         }
+        
+        .table-wrapper {
+            overflow-x: scroll;
+        }
 
         .pagebreak {
             height: 1px;
@@ -98,7 +110,7 @@
             -moz-border-radius: 0px 0px 0px 10px;
             -webkit-border-radius: 0px 0px 0px 10px;
             border: 0px solid #000000;
-            text-decoration: none;
+            z-index: 100;
         }
 
         .edit::before {
@@ -352,14 +364,23 @@
             }
             
             function postFormatOutput() {
-                //Fix Table Margins
+                //Fix Table Margins & scroll
                 var elements = document.getElementsByTagName("table");
                 for(var i = 0, max = elements.length; i < max; i++) {
                     if (elements[i].style.marginLeft[0] == "-") {
                         elements[i].style.marginLeft = "0";
                     }
-                }
+                    
+                    // create wrapper container
+                    var wrapper = document.createElement('div');
+                    wrapper.className = "table-wrapper";
 
+                    // insert wrapper before el in the DOM tree
+                    elements[i].parentNode.insertBefore(wrapper, elements[i]);
+
+                    // move el into wrapper
+                    wrapper.appendChild(elements[i]);
+                }
                 
                 //Pagebreaks
                 var doc = document.getElementsByClassName("doc")[0];
