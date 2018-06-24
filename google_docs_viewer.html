@@ -24,6 +24,7 @@
 
         .doc {
             padding: 20pt !important;
+            max-width: 100%;
         }
 
         #content {
@@ -34,6 +35,7 @@
         .row {
             margin: 0 -10pt;
             text-align: center;
+            max-width: 100%;
         }
 
         .page {
@@ -41,8 +43,7 @@
             vertical-align: top;
             box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
             margin: 10pt;
-            max-width: calc(100% - 20pt);
-            box-sizing: border-box;
+            max-width: 100%;
         }
 
         li {
@@ -50,6 +51,8 @@
         }
         li::before {
             position: absolute;
+            right: 100%;
+            padding-right: 1ex;
         }
 
         img {
@@ -69,6 +72,8 @@
         
         .table-wrapper {
             overflow-x: scroll;
+            overflow-y: visible;
+            padding-bottom: 1px;
         }
 
         .pagebreak {
@@ -95,6 +100,7 @@
             width: 550pt;
             max-width: 100%;
             background-color: #FFF;
+            height: 600px;
             height: 100vh;
             text-align:center;
         }
@@ -351,13 +357,14 @@
                 }
                 
                 //Fix List indentaton
-                output = output.replace(/<li[^>]*style=".*?padding-left:(-[^;]*).*?margin-left:([^;]*);[^"]*"/gi, function(match, padding, margin, offset) {
+                /*
+                output = output.replace(/<li[^>]*style=".*?padding-left:([^;]*).*?margin-left:([^;]*);[^"]*"/gi, function(match, padding, margin, offset) {
                     var id = 'list-' + offset;
                     var style="<style>#" + id + "::before{left:calc(0pt - " + margin + " - " + padding + ");}</style>";
 
                     return style + match + ' id="' + id + '"';
                 
-                });
+                });*/
                 
 
                 return output
@@ -386,11 +393,16 @@
                 var doc = document.getElementsByClassName("doc")[0];
                 
                 if (doc) {
-                    var elements = Array.from(doc.children),
+                    var elements_nodelist = doc.children,
                         ruler = document.getElementById('ruler').getBoundingClientRect(),
                         multiplier = ruler['bottom'] - ruler['top'],
                         pointer = getYOffset(elements[0]),
-                        page = 0;
+                        page = 0,
+                        elements = [];
+
+                    for (var i = elements_nodelist.length >>> 0; i--;) { 
+                        elements[i] = elements_nodelist[i];
+                    }
 
                     for(var i = 1, max = elements.length; i < max; i++) {
                         var y = getYOffset(elements[i]),
