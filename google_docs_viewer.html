@@ -6,16 +6,6 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" type="text/css" href="normalize.css">
     <style>    
-        ::-webkit-scrollbar {
-            -webkit-appearance: none; width: 12px; height: 6px;
-            background-color: inherit;
-        }
-        ::-webkit-scrollbar-thumb {
-            border-radius: 2px;
-            background-color: rgba(128, 128, 128, .5);
-            box-shadow: 0 0 1px rgba(255, 255, 255, .5);
-        }
-        
         .table-wrapper {
             overflow-x: auto;
             overflow-y: visible;
@@ -104,10 +94,11 @@
             position: relative;
             width: 550pt;
             max-width: 100%;
-            background-color: #FFF;
             height: 600px;
             height: 100vh;
             text-align:center;
+            background-color: #FFF;
+            box-shadow: rgba(0, 0, 0, 0.28) 0px 0px 9px 0px;
         }
 
         .edit {
@@ -328,17 +319,31 @@
                     var head = document.head || document.getElementsByTagName('head')[0],
                         style = document.createElement('style'),
                         css = '@media screen and (min-width: ' + (options['width']) + 'pt) {' +
-                        '.page {' +
-                            'min-width: ' + (options['width'] + 20) + 'pt;' +
-                            'width: ' + (options['width'] + 20) + 'pt;' +
-                            'width: min-content;' +
-                            'width: -moz-min-content;' +
-                            'width: -webkit-min-content;' +
-                        '}}' +
+                            '.page {' +
+                                'min-width: ' + (options['width'] + 20) + 'pt;' +
+                                'width: ' + (options['width'] + 20) + 'pt;' +
+                                'width: min-content;' +
+                                'width: -moz-min-content;' +
+                                'width: -webkit-min-content;' +
+                            '}' +
+                        '}' +
+                        '@media screen and (max-width: ' + (options['width']) + 'pt) {' +
+                            '::-webkit-scrollbar {' +
+                                '-webkit-appearance: none; width: 12px; height: 6px;' +
+                                'background-color: inherit;' +
+                            '}' +
+                            '::-webkit-scrollbar-thumb {' +
+                                'border-radius: 2px;' +
+                                'background-color: rgba(128, 128, 128, .5);' +
+                                'box-shadow: 0 0 1px rgba(255, 255, 255, .5);' +
+                            '}' +
+                            '#content {' +
+                                'margin-top: -10pt;' +
+                                'margin-bottom: -10pt;' +
+                            '}' +
+                        '}' +
                         '.page-content {' +
                             'background-color: ' + options['background'] + ';' +
-                        '}' +
-                        '.page {' +
                             ((options['height'] !== null) ? 'min-height: ' + options['height'] + 'pt;' : '') +
                         '}';
 
