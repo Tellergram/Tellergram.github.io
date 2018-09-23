@@ -625,8 +625,10 @@
                             if (parent.settings.remove_comments && (line.startswith("((") || line.endswith("))"))) continue;
 
                             //REMOVE ||, //, >>
-                            var match = /(-)?[|\>\/]{1,8}$/.exec(line.plain_text);
-                            if (match) line.splice(match.index, match[0].length);
+                            if (parent.settings.remove_end){
+                                var match = /-?([|\>]{1,8}|[\/]{2,8})$/.exec(line.plain_text);
+                                if (match) line.splice(match.index, match[0].length);
+                            }
                             
                             //CONVERT ITALICS
                             if (parent.settings.detect_italics){
