@@ -396,6 +396,11 @@
                 content = content.replace(/<hr><p[^>]*?><span[^>]*?><\/span><\/p>/gi, "<hr>");
                 content = content.replace(/<hr>/gi, "<div class='hr'></div>");
                 
+                //Fix line height
+                content = content.replace(/line-height:(.*?);/gi, function (x, p1) {
+                    return "line-height:" + (Math.max(parseFloat(p1), 1) * 1.2) + ";"
+                });
+                
                 // Fix for safari list items :|
                 var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                 if (isSafari) {
