@@ -254,6 +254,7 @@
                         gm: "Teller|GM",
                         player: "",
                         output_header: "",
+                        bot: "[ATM]",
                         output_gm_post: "<p><b>[NICK]</b></p><p>[POST]</p><hr>",
                         output_player_post: "<p><b>[NICK]</b></p><p>[POST]</p><hr>",
                         output_footer: "",
@@ -501,9 +502,10 @@
                         //BUILD LIST OF NICKS
                         var gm_nicks = $.map(parent.settings.gm.split(","), $.trim),
                             player_nicks = $.map(parent.settings.player.split(","), $.trim),
+                            bot_nicks = $.map(parent.settings.bot.split(","), $.trim),
                             all_nicks = gm_nicks.concat(player_nicks);
                             
-                        if (parent.settings.format_rolls) all_nicks.push('[ATM]');
+                        if (parent.settings.format_rolls) all_nicks = all_nicks.concat(bot_nicks);
                         
                         var escaped_nicks = $.map( all_nicks, function(str) { return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"); }).join('|');
                         var dot = String.fromCharCode(8226),
@@ -620,7 +622,7 @@
                             }
                             
                             //MATCH ROLLS
-                            if (rolls_convert_output && match_nick && match_nick == '[ATM]') {
+                            if (rolls_convert_output && match_nick && bot_nicks.indexOf(match_nick) != -1) {
                                 if (line.indexOf('=') != -1) { //FORMAT AS A ROLL
                                     var match_roll = /.*?[ ](".*?")?[ ]?(.*)/.exec(line);
                                     if (match_roll[1]) {
@@ -667,10 +669,10 @@
                             }
                             
                             //UPDATE NICK
-                            if (match_nick == '[ATM]' && rolls_convert_output && !rolls_hide_nick) match_nick = roll_nick;
+                            if (bot_nicks.indexOf(match_nick) != -1 && rolls_convert_output && !rolls_hide_nick) match_nick = roll_nick;
                             
                             if (match_nick) {
-                                if (match_nick != '[ATM]' || !rolls_convert_output) {
+                                if (bot_nicks.indexOf(match_nick) === -1 || !rolls_convert_output) {
                                     if (current_post.nick && (current_post.nick != match_nick || !parent.settings.merge_consecutive_posts)) { //Start a new post
                                         posts.push(current_post);
                                         current_post = new parent.Post();
@@ -691,7 +693,7 @@
                                     line.splice(0, 3);
                                     last_line.splice(last_line.length - 3);
                                     last_line.concat(line);
-                                } else if (parent.settings.detect_splits && last_line && !line.startswith(['((', '"', '*', '&nbsp;&nbsp;&nbsp;&nbsp;']) && !last_line.endswith(['.', '"', '-', '!', '?', '))']) && !last_line.startswith('&nbsp;&nbsp;&nbsp;&nbsp;') && current_post.nick != '[ATM]') {
+                                } else if (parent.settings.detect_splits && last_line && !line.startswith(['((', '"', '*', '&nbsp;&nbsp;&nbsp;&nbsp;']) && !last_line.endswith(['.', '"', '-', '!', '?', '))']) && !last_line.startswith('&nbsp;&nbsp;&nbsp;&nbsp;') && bot_nicks.indexOf(current_post.nick) === -1) {
                                     if (!line.startswith(' ') && !last_line.endswith(' ')) {
                                         last_line.append(' ');
                                     }
@@ -856,7 +858,7 @@
                 <span class="label">Settings</span>
                 <font size="2">
                     <i>Placeholders: [NICK] [POST]<br />
-                    Separate multiple GM/player names with a comma.</i>
+                    Separate multiple GM/player/bot names with a comma.</i>
                 </font>
             </div>
             <div class="content">
@@ -887,7 +889,7 @@
                 <table width="100%">
                     <tr>
                         <td class="label">Rolls</td>
-                        <td colspan="3">
+                        <td>
                             <select class="input_small" onchange="irc_log_formatter.cache.save()" data-model="settings.format_rolls">
                                 <option value="0">Don't format</option>
                                 <option value="1">Hide commands</option>
@@ -895,6 +897,10 @@
                                 <option value="3">Format & hide nick</option>
                             </select>
                         </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Bot(s)</td>
+                        <td><input type="text" class="input_small" onchange="irc_log_formatter.cache.save()" data-model="settings.bot"></input></td>
                     </tr>
                 </table>
             </div>
